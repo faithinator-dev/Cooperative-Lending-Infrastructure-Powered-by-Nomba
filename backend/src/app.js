@@ -1,13 +1,10 @@
-const express = require("express");
+import express from "express";
+import memberRoutes from "./routes/member.routes.js";
 
 const app = express();
 
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.json({
-    message: "Co-op Lending API Running"
-  });
-});
+app.use("/api/members", memberRoutes);
 
-module.exports = app;
+export default app;
