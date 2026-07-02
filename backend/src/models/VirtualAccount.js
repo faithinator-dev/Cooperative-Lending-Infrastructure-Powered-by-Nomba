@@ -3,6 +3,11 @@ import mongoose from "mongoose";
 const virtualAccountSchema = new mongoose.Schema(
   {
     memberId: {
+const mongoose = require("mongoose");
+
+const virtualAccountSchema = new mongoose.Schema(
+  {
+    member: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Member",
       required: true,
@@ -18,10 +23,13 @@ const virtualAccountSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      trim: true,
     },
 
     accountName: {
       type: String,
+      required: true,
+      trim: true,
     },
 
     bankName: {
@@ -37,6 +45,27 @@ const virtualAccountSchema = new mongoose.Schema(
     balance: {
       type: Number,
       default: 0,
+      required: true,
+      trim: true,
+    },
+
+    accountReference: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+
+    accountType: {
+      type: String,
+      enum: ["SAVINGS", "LOAN"],
+      required: true,
+    },
+
+    status: {
+      type: String,
+      enum: ["ACTIVE", "INACTIVE"],
+      default: "ACTIVE",
     },
   },
   {
@@ -52,3 +81,4 @@ export default mongoose.model(
   "VirtualAccount",
   virtualAccountSchema
 );
+module.exports = mongoose.model("VirtualAccount", virtualAccountSchema);
