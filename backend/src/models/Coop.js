@@ -1,15 +1,10 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const coopSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: true,
-      trim: true,
-    },
-
-    description: {
-      type: String,
       trim: true,
     },
 
@@ -32,6 +27,13 @@ const coopSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Nomba Sub Account ID (if using multi-coop support)
+    
+    nombaSubAccountId: {
+      type: String,
+      default: null,
+    },
+
     status: {
       type: String,
       enum: ["ACTIVE", "INACTIVE"],
@@ -43,4 +45,8 @@ const coopSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Coop", coopSchema);
+// Indexes
+coopSchema.index({ email: 1 });
+coopSchema.index({ status: 1 });
+
+export default mongoose.model("Coop", coopSchema);
