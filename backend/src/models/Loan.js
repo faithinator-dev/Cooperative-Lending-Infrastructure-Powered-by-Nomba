@@ -1,8 +1,8 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const loanSchema = new mongoose.Schema(
   {
-    member: {
+    memberId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Member",
       required: true,
@@ -26,40 +26,30 @@ const loanSchema = new mongoose.Schema(
       min: 1,
     },
 
-    monthlyPayment: {
+    monthlyDue: {
       type: Number,
       required: true,
-      min: 0,
     },
 
-    outstandingBalance: {
+    balance: {
       type: Number,
       required: true,
-      min: 0,
     },
 
     status: {
       type: String,
-      enum: [
-        "PENDING",
-        "APPROVED",
-        "ACTIVE",
-        "COMPLETED",
-        "DEFAULTED",
-      ],
-      default: "PENDING",
-    },
-
-    approvalDate: {
-      type: Date,
-    },
-
-    dueDate: {
-      type: Date,
+      enum: ["ACTIVE", "PAID", "ARREARS"],
+      default: "ACTIVE",
     },
 
     disbursedAt: {
       type: Date,
+      default: Date.now,
+    },
+
+    penalty: {
+        type: Number,
+        default: 0,
     },
   },
   {
@@ -67,4 +57,4 @@ const loanSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Loan", loanSchema);
+export default mongoose.model("Loan", loanSchema);
