@@ -1,3 +1,10 @@
+import mongoose from "mongoose";
+
+const memberSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
 const mongoose = require("mongoose");
 
 const memberSchema = new mongoose.Schema(
@@ -17,6 +24,22 @@ const memberSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: true,
+      unique: true,
+    },
+
+    bvn: {
+      type: String,
+    },
+
+    coopId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Coop",
+    },
+
+    bankDetails: {
+      accountNumber: String,
+      bankName: String,
+      accountName: String,
       trim: true,
     },
 
@@ -44,4 +67,5 @@ const memberSchema = new mongoose.Schema(
   }
 );
 
+export default mongoose.model("Member", memberSchema);
 module.exports = mongoose.model("Member", memberSchema);

@@ -1,12 +1,29 @@
+import { getAccessToken } from "../services/nomba/auth.service.js";
+
 let accessToken = null;
+let tokenExpiry = null;
 
-const setToken = (token) => {
-  accessToken = token;
-};
+export async function getNombaToken() {
+  const now = Date.now();
 
-const getToken = () => accessToken;
+  // Return cached token if still valid
+  if (
+    accessToken &&
+    tokenExpiry &&
+    now < tokenExpiry
+  ) {
+    return accessToken;
+  }
 
-module.exports = {
-  setToken,
-  getToken,
-};
+  // Get fresh token
+  const authResponse = await getAccessToken();
+
+  accessToken = authResponse.data.access_token;
+
+  // Expire 1 minute before actual expiry
+  tokenExpiry =
+    new Date(authResponse.data.expiresAt).getTime() -
+    60 * 1000;
+
+  return accessToken;
+}
