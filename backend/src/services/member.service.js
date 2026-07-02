@@ -1,27 +1,24 @@
-const Member = require("../models/Member");
-const VirtualAccount = require("../models/VirtualAccount");
+import Member from "../models/Member.js";
 
-const createMember = async (memberData) => {
-  // Check if a member with the same memberId already exists
- const existingMember = await Member.findOne({
-  bvn: memberData.bvn,
-});
+export const createMember = async (memberData) => {
+  const existingMember = await Member.findOne({
+    bvn: memberData.bvn,
+  });
 
-if (existingMember) {
-  throw new Error("Member with this BVN already exists");
-}
+  if (existingMember) {
+    throw new Error("Member with this BVN already exists");
+  }
 
-  // Create and save the member
   const member = await Member.create(memberData);
 
   return member;
 };
 
-const getMembers = async () => {
+export const getMembers = async () => {
   return await Member.find().populate("coop");
 };
 
-const getMemberById = async (id) => {
+export const getMemberById = async (id) => {
   const member = await Member.findById(id).populate("coop");
 
   if (!member) {
@@ -29,10 +26,4 @@ const getMemberById = async (id) => {
   }
 
   return member;
-};
-
-module.exports = {
-  createMember,
-  getMembers,
-  getMemberById,
 };

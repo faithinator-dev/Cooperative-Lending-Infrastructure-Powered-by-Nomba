@@ -1,48 +1,40 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const memberSchema = new mongoose.Schema(
   {
-    fullName: {
+    name: {
       type: String,
       required: true,
-      trim: true,
     },
-
-    email: {
-      type: String,
-      lowercase: true,
-      trim: true,
-    },
-
     phone: {
       type: String,
       required: true,
-      trim: true,
-    },
+trim: true,
+},
 
-    bvn: {
+bvn: {
   type: String,
   required: true,
   unique: true,
   trim: true,
 },
-    memberId: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-    },
 
-    coop: {
+memberId: {
+  type: String,
+  required: true,
+      unique: true,
+    },
+    bvn: {
+      type: String,
+    },
+    coopId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Coop",
-      required: true,
     },
-
-    status: {
-      type: String,
-      enum: ["ACTIVE", "INACTIVE"],
-      default: "ACTIVE",
+    bankDetails: {
+      accountNumber: String,
+      bankName: String,
+      accountName: String,
     },
   },
   {
@@ -50,4 +42,4 @@ const memberSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Member", memberSchema);
+export default mongoose.model("Member", memberSchema);

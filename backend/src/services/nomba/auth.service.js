@@ -1,5 +1,9 @@
-async function getAccessToken() {
-  const url = "https://sandbox.nomba.com/v1/auth/token/issue";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+export async function getAccessToken() {
+  const url = `${process.env.NOMBA_BASE_URL}/v1/auth/token/issue`;
 
   const payload = {
     grant_type: "client_credentials",
@@ -7,12 +11,19 @@ async function getAccessToken() {
     client_secret: process.env.NOMBA_CLIENT_SECRET,
   };
 
+  console.log("Account ID:", process.env.NOMBA_ACCOUNT_ID);
+  console.log("Client ID:", process.env.NOMBA_CLIENT_ID);
+  console.log(
+    "Client Secret:",
+    process.env.NOMBA_CLIENT_SECRET?.slice(0, 10) + "...",
+  );
+
   try {
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "accountId": process.env.NOMBA_ACCOUNT_ID,
+        accountId: process.env.NOMBA_ACCOUNT_ID,
       },
       body: JSON.stringify(payload),
     });
@@ -20,16 +31,12 @@ async function getAccessToken() {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(
-        `${response.status}: ${JSON.stringify(data)}`
-      );
+      throw new Error(`HTTP ${response.status}: ${JSON.stringify(data)}`);
     }
-
-    console.log("Authentication successful");
 
     return data;
   } catch (error) {
-    console.error("Authentication failed:", error.message);
+    console.error("Nomba Authentication Error:", error.message);
     throw error;
   }
 }

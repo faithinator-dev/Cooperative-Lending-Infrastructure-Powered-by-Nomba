@@ -1,19 +1,20 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const ledgerSchema = new mongoose.Schema(
   {
-    member: {
+    memberId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Member",
       required: true,
     },
 
-    loan: {
+    loanId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Loan",
+      default: null,
     },
 
-    virtualAccount: {
+    virtualAccountId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "VirtualAccount",
       required: true,
@@ -23,8 +24,8 @@ const ledgerSchema = new mongoose.Schema(
       type: String,
       enum: [
         "SAVINGS",
-        "LOAN_REPAYMENT",
         "LOAN_DISBURSEMENT",
+        "LOAN_REPAYMENT",
         "PENALTY",
       ],
       required: true,
@@ -42,6 +43,11 @@ const ledgerSchema = new mongoose.Schema(
       min: 0,
     },
 
+    balanceAfter: {
+      type: Number,
+      default: 0,
+    },
+
     transactionRef: {
       type: String,
       required: true,
@@ -49,9 +55,15 @@ const ledgerSchema = new mongoose.Schema(
       trim: true,
     },
 
-    description: {
+    nombaTransactionId: {
+      type: String,
+      default: null,
+    },
+
+    narration: {
       type: String,
       trim: true,
+      default: "",
     },
 
     status: {
@@ -65,4 +77,10 @@ const ledgerSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Ledger", ledgerSchema);
+// Indexes
+ledgerSchema.index({ transactionRef: 1 });
+ledgerSchema.index({ memberId: 1 });
+ledgerSchema.index({ loanId: 1 });
+ledgerSchema.index({ virtualAccountId: 1 });
+
+export default mongoose.model("Ledger", ledgerSchema);
