@@ -20,6 +20,12 @@ const memberSchema = new mongoose.Schema(
       trim: true,
     },
 
+    bvn: {
+  type: String,
+  required: true,
+  unique: true,
+  trim: true,
+},
     memberId: {
       type: String,
       required: true,
