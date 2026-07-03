@@ -47,14 +47,28 @@ const loanSchema = new mongoose.Schema(
       default: Date.now,
     },
 
+    transferId: {
+      type: String,
+    },
+
+    merchantTxRef: {
+      type: String,
+    },
+
+    transferStatus: {
+      type: String,
+      enum: ["PENDING", "SUCCESS", "FAILED", "REFUND"],
+      default: "PENDING",
+    },
+
     penalty: {
-        type: Number,
-        default: 0,
+      type: Number,
+      default: 0,
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.model("Loan", loanSchema);
