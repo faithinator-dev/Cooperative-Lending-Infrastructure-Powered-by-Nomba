@@ -9,6 +9,13 @@ export const addMember = async (req, res) => {
       data: member,
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "A member with this phone number already exists.",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: error.message,
