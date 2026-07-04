@@ -38,8 +38,8 @@ const loanSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["ACTIVE", "PAID", "ARREARS"],
-      default: "ACTIVE",
+      enum: ["PENDING", "ACTIVE", "PAID", "ARREARS"],
+      default: "PENDING",
     },
 
     disbursedAt: {
@@ -57,7 +57,7 @@ const loanSchema = new mongoose.Schema(
 
     transferStatus: {
       type: String,
-      enum: ["PENDING", "SUCCESS", "FAILED", "REFUND"],
+      enum: ["PENDING", "SUCCESS", "PENDING_BILLING", "FAILED", "REFUND"],
       default: "PENDING",
     },
 

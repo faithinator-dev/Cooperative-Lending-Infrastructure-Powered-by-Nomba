@@ -17,7 +17,6 @@ const ledgerSchema = new mongoose.Schema(
     virtualAccountId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "VirtualAccount",
-      required: true,
     },
 
     transactionType: {

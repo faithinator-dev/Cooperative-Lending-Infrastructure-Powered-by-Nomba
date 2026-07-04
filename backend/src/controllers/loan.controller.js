@@ -1,5 +1,22 @@
 import { createLoan, disburseLoan } from "../services/loan.service.js";
 
+export const approveLoan = async (req, res) => {
+  try {
+    const result = await disburseLoan(req.params.loanId);
+
+    res.status(200).json({
+      success: true,
+      message: "Loan disbursement initiated",
+      data: result,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const addLoan = async (req, res) => {
   try {
     const loan = await createLoan(req.body);
@@ -16,6 +33,7 @@ export const addLoan = async (req, res) => {
   }
 };
 
+/* 
 export const approveLoan = async (req, res) => {
   try {
     const loan = await disburseLoan(req.params.loanId);
@@ -31,4 +49,4 @@ export const approveLoan = async (req, res) => {
       message: error.message,
     });
   }
-};
+}; */

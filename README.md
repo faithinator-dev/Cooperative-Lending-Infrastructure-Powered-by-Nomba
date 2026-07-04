@@ -100,7 +100,7 @@ Generate:
 
 ### Frontend (React)
 
-```
+``` .
 User Interface
 Admin Dashboard
 Member Portal
