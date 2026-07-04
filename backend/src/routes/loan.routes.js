@@ -1,13 +1,9 @@
 import express from "express";
-import {
-  addLoan,
-  approveLoan,
-} from "../controllers/loan.controller.js";
+import {addLoan, approveLoan } from "../controllers/loan.controller.js";
 
 const router = express.Router();
 
+router.post("/disburse/:loanId", approveLoan);
 router.post("/", addLoan);
 
-router.post("/disburse/:loanId", approveLoan);
-
-export default router;
+export default router; 

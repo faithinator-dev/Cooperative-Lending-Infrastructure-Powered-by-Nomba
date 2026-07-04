@@ -43,13 +43,14 @@ export const receiveWebhook = async (req, res) => {
     await webhook.save();
 
     await Ledger.create({
-      member: virtualAccount.memberId._id,
-      virtualAccount: virtualAccount._id,
+      memberId: virtualAccount.memberId._id,
+      virtualAccountId: virtualAccount._id,
       transactionType: "SAVINGS",
       entryType: "CREDIT",
       amount,
+      balanceAfter: virtualAccount.balance + amount,
       transactionRef,
-      description: "Savings deposit via Nomba",
+      narration: "Savings deposit via Nomba",
       status: "SUCCESS",
     });
 
@@ -65,7 +66,7 @@ export const receiveWebhook = async (req, res) => {
     }
 
     webhook.status = "PROCESSED";
-await webhook.save();
+    await webhook.save();
 
     // TODO: Day 4
     // If accountType === "LOAN"
