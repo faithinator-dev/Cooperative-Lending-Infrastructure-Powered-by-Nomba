@@ -13,8 +13,13 @@ const router = express.Router();
 
 // Loan CRUD
 router.post("/", createLoanController);
+
+router.post("/disburse/:loanId", approveLoan);
+router.post("/:loanId/repay", repayLoan);
+
 router.get("/", getLoansController);
 router.get("/:id", getLoanByIdController);
+
 router.put("/:id", updateLoanController);
 router.delete("/:id", deleteLoanController);
 
