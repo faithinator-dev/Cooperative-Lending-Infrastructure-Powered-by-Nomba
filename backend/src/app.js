@@ -3,6 +3,7 @@ import memberRoutes from "./routes/member.routes.js";
 import webhookRoutes from "./routes/webhook.routes.js";
 import loanRoutes from "./routes/loan.routes.js";
 import coopRoutes from "./routes/coop.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
 
 const app = express();
 
@@ -15,5 +16,7 @@ app.use("/api/webhooks", webhookRoutes);
 app.use("/api/loans", loanRoutes);
 
 app.use("/api/coops", coopRoutes);
+
+app.use("/api/dashboard", dashboardRoutes);
 
 export default app;

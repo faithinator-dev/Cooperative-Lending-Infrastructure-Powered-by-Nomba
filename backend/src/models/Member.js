@@ -24,9 +24,6 @@ memberId: {
   required: true,
       unique: true,
     },
-    bvn: {
-      type: String,
-    },
     coopId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Coop",
