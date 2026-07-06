@@ -3,27 +3,91 @@ import Member from "../models/Member.js";
 import Ledger from "../models/Ledger.js";
 import { performTransfer } from "./nomba/transfer.service.js";
 
-export const disburseLoan = async (loanId) => {
-  // Find loan
+// ========================
+// Helper Functions
+// ========================
+
+// Calculate flat interest
+export const calculateInterest = (principal, interestRate) => {
+  return (principal * interestRate) / 100;
+};
+
+// Calculate penalty for underpayment
+export const calculatePenalty = (monthlyDue, amountPaid) => {
+  if (amountPaid >= monthlyDue) {
+    return 0;
+  }
+
+  const missedAmount = monthlyDue - amountPaid;
+  return missedAmount * 0.05;
+};
+
+// Update loan status
+export const updateLoanStatus = (loan) => {
+  if (loan.balance <= 0) {
+    loan.status = "PAID";
+  } else if (loan.penalty > 0) {
+    loan.status = "ARREARS";
+  } else {
+    loan.status = "ACTIVE";
+  }
+
+  return loan.status;
+};
+
+// ========================
+// Loan Repayment
+// ========================
+
+export const processRepayment = async (loanId, amountPaid) => {
   const loan = await Loan.findById(loanId);
 
   if (!loan) {
     throw new Error("Loan not found");
   }
 
-  // Prevent duplicate disbursement
+  if (amountPaid <= 0) {
+    throw new Error("Repayment amount must be greater than zero");
+  }
+
+  const penalty = calculatePenalty(loan.monthlyDue, amountPaid);
+
+  loan.penalty += penalty;
+
+  loan.balance = loan.balance - amountPaid + penalty;
+
+  if (loan.balance < 0) {
+    loan.balance = 0;
+  }
+
+  updateLoanStatus(loan);
+
+  await loan.save();
+
+  return loan;
+};
+
+// ========================
+// Loan Disbursement
+// ========================
+
+export const disburseLoan = async (loanId) => {
+  const loan = await Loan.findById(loanId);
+
+  if (!loan) {
+    throw new Error("Loan not found");
+  }
+
   if (loan.status === "ACTIVE") {
     throw new Error("Loan has already been disbursed");
   }
 
-  // Find member
   const member = await Member.findById(loan.memberId);
 
   if (!member) {
     throw new Error("Member not found");
   }
 
-  // Validate bank details
   if (
     !member.bankDetails?.accountNumber ||
     !member.bankDetails?.accountName ||
@@ -34,7 +98,6 @@ export const disburseLoan = async (loanId) => {
 
   const merchantTxRef = `LOAN-${Date.now()}`;
 
-  // Call Nomba
   const transfer = await performTransfer({
     amount: loan.principal,
     accountNumber: member.bankDetails.accountNumber,
@@ -45,13 +108,11 @@ export const disburseLoan = async (loanId) => {
     narration: `Loan Disbursement - ${member.name}`,
   });
 
-  // Save transfer details
   loan.transferId = transfer.data.id;
   loan.transferStatus = transfer.data.status;
   loan.merchantTxRef = merchantTxRef;
   loan.disbursedAt = new Date();
 
-  // Update status based on Nomba response
   if (transfer.data.status === "SUCCESS") {
     loan.status = "ACTIVE";
   } else {
@@ -60,7 +121,6 @@ export const disburseLoan = async (loanId) => {
 
   await loan.save();
 
-  // Ledger entry
   await Ledger.create({
     memberId: member._id,
     loanId: loan._id,
@@ -80,20 +140,59 @@ export const disburseLoan = async (loanId) => {
   };
 };
 
+// ========================
+// Loan CRUD
+// ========================
+
 export const createLoan = async (loanData) => {
   const monthlyDue =
     (loanData.principal * (1 + loanData.interestRate / 100)) /
     loanData.tenorMonths;
 
-  const loan = await Loan.create({
+  return await Loan.create({
     memberId: loanData.memberId,
     principal: loanData.principal,
     interestRate: loanData.interestRate,
     tenorMonths: loanData.tenorMonths,
     monthlyDue,
     balance: loanData.principal,
-    status: "ACTIVE",
+    status: "PENDING",
   });
+};
+
+export const getLoans = async () => {
+  return await Loan.find().populate("memberId");
+};
+
+export const getLoanById = async (id) => {
+  const loan = await Loan.findById(id).populate("memberId");
+
+  if (!loan) {
+    throw new Error("Loan not found");
+  }
+
+  return loan;
+};
+
+export const updateLoan = async (id, updateData) => {
+  const loan = await Loan.findByIdAndUpdate(id, updateData, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!loan) {
+    throw new Error("Loan not found");
+  }
+
+  return loan;
+};
+
+export const deleteLoan = async (id) => {
+  const loan = await Loan.findByIdAndDelete(id);
+
+  if (!loan) {
+    throw new Error("Loan not found");
+  }
 
   return loan;
 };
