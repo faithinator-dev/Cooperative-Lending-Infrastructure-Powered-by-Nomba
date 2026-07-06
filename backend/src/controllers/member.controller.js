@@ -6,6 +6,7 @@ import {
   deleteMember,
 } from "../services/member.service.js";
 
+// Create Member
 export const addMember = async (req, res) => {
   try {
     const member = await createMember(req.body);
@@ -15,6 +16,13 @@ export const addMember = async (req, res) => {
       data: member,
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: "A member with this phone number already exists.",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: error.message,
@@ -22,14 +30,12 @@ export const addMember = async (req, res) => {
   }
 };
 
-// Get all members
+// Get All Members
 export const getAllMembers = async (req, res) => {
   try {
     const result = await getMembers(req.query);
 
-    console.log("RESULT:", result);
-
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       members: result.members,
       page: result.page,
@@ -37,14 +43,14 @@ export const getAllMembers = async (req, res) => {
       total: result.total,
     });
   } catch (error) {
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
 
-// Get member by ID
+// Get Member By ID
 export const getSingleMember = async (req, res) => {
   try {
     const member = await getMemberById(req.params.id);
@@ -61,7 +67,7 @@ export const getSingleMember = async (req, res) => {
   }
 };
 
-// Update member
+// Update Member
 export const editMember = async (req, res) => {
   try {
     const member = await updateMember(req.params.id, req.body);
@@ -79,7 +85,7 @@ export const editMember = async (req, res) => {
   }
 };
 
-// Delete member
+// Delete Member
 export const removeMember = async (req, res) => {
   try {
     await deleteMember(req.params.id);

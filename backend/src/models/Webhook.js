@@ -6,7 +6,6 @@ const webhookSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      trim: true,
     },
 
     eventType: {
@@ -39,12 +38,7 @@ const webhookSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: [
-        "RECEIVED",
-        "PROCESSING",
-        "PROCESSED",
-        "FAILED",
-      ],
+      enum: ["RECEIVED", "PROCESSING", "PROCESSED", "FAILED"],
       default: "RECEIVED",
     },
 
@@ -60,11 +54,10 @@ const webhookSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Indexes
-webhookSchema.index({ transactionRef: 1 });
 webhookSchema.index({ eventType: 1 });
 webhookSchema.index({ processed: 1 });
 

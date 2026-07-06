@@ -17,6 +17,7 @@ const virtualAccountSchema = new mongoose.Schema(
     accountNumber: {
       type: String,
       required: true,
+      unique: true,
     },
 
     accountName: {
@@ -51,7 +52,4 @@ const virtualAccountSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model(
-  "VirtualAccount",
-  virtualAccountSchema
-);
+export default mongoose.model("VirtualAccount", virtualAccountSchema);

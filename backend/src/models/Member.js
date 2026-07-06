@@ -29,14 +29,26 @@ memberId: {
       ref: "Coop",
     },
     bankDetails: {
-      accountNumber: String,
-      bankName: String,
-      accountName: String,
+      accountNumber: {
+        type: String,
+      },
+
+      accountName: {
+        type: String,
+      },
+
+      bankName: {
+        type: String,
+      },
+
+      bankCode: {
+        type: String,
+      },
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default mongoose.model("Member", memberSchema);

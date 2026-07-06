@@ -1,4 +1,11 @@
 import Loan from "../models/Loan.js";
+import Member from "../models/Member.js";
+import Ledger from "../models/Ledger.js";
+import { performTransfer } from "./nomba/transfer.service.js";
+
+// ========================
+// Helper Functions
+// ========================
 
 // Calculate flat interest
 export const calculateInterest = (principal, interestRate) => {
@@ -28,7 +35,10 @@ export const updateLoanStatus = (loan) => {
   return loan.status;
 };
 
-// Process loan repayment
+// ========================
+// Loan Repayment
+// ========================
+
 export const processRepayment = async (loanId, amountPaid) => {
   const loan = await Loan.findById(loanId);
 
@@ -40,21 +50,16 @@ export const processRepayment = async (loanId, amountPaid) => {
     throw new Error("Repayment amount must be greater than zero");
   }
 
-  // Calculate penalty
   const penalty = calculatePenalty(loan.monthlyDue, amountPaid);
 
-  // Add penalty
   loan.penalty += penalty;
 
-  // Update balance
   loan.balance = loan.balance - amountPaid + penalty;
 
-  // Prevent negative balance
   if (loan.balance < 0) {
     loan.balance = 0;
   }
 
-  // Update status
   updateLoanStatus(loan);
 
   await loan.save();
@@ -62,18 +67,103 @@ export const processRepayment = async (loanId, amountPaid) => {
   return loan;
 };
 
-// Create a new loan
-export const createLoan = async (loanData) => {
-  const loan = await Loan.create(loanData);
-  return loan;
+// ========================
+// Loan Disbursement
+// ========================
+
+export const disburseLoan = async (loanId) => {
+  const loan = await Loan.findById(loanId);
+
+  if (!loan) {
+    throw new Error("Loan not found");
+  }
+
+  if (loan.status === "ACTIVE") {
+    throw new Error("Loan has already been disbursed");
+  }
+
+  const member = await Member.findById(loan.memberId);
+
+  if (!member) {
+    throw new Error("Member not found");
+  }
+
+  if (
+    !member.bankDetails?.accountNumber ||
+    !member.bankDetails?.accountName ||
+    !member.bankDetails?.bankCode
+  ) {
+    throw new Error("Member bank details are incomplete");
+  }
+
+  const merchantTxRef = `LOAN-${Date.now()}`;
+
+  const transfer = await performTransfer({
+    amount: loan.principal,
+    accountNumber: member.bankDetails.accountNumber,
+    accountName: member.bankDetails.accountName,
+    bankCode: member.bankDetails.bankCode,
+    merchantTxRef,
+    senderName: "Faith Cooperative",
+    narration: `Loan Disbursement - ${member.name}`,
+  });
+
+  loan.transferId = transfer.data.id;
+  loan.transferStatus = transfer.data.status;
+  loan.merchantTxRef = merchantTxRef;
+  loan.disbursedAt = new Date();
+
+  if (transfer.data.status === "SUCCESS") {
+    loan.status = "ACTIVE";
+  } else {
+    loan.status = "PENDING";
+  }
+
+  await loan.save();
+
+  await Ledger.create({
+    memberId: member._id,
+    loanId: loan._id,
+    transactionType: "LOAN_DISBURSEMENT",
+    entryType: "DEBIT",
+    amount: loan.principal,
+    balanceAfter: loan.balance,
+    transactionRef: merchantTxRef,
+    nombaTransactionId: transfer.data.id,
+    narration: "Loan disbursed through Nomba",
+    status: "SUCCESS",
+  });
+
+  return {
+    loan,
+    transfer,
+  };
 };
 
-// Get all loans
+// ========================
+// Loan CRUD
+// ========================
+
+export const createLoan = async (loanData) => {
+  const monthlyDue =
+    (loanData.principal * (1 + loanData.interestRate / 100)) /
+    loanData.tenorMonths;
+
+  return await Loan.create({
+    memberId: loanData.memberId,
+    principal: loanData.principal,
+    interestRate: loanData.interestRate,
+    tenorMonths: loanData.tenorMonths,
+    monthlyDue,
+    balance: loanData.principal,
+    status: "PENDING",
+  });
+};
+
 export const getLoans = async () => {
   return await Loan.find().populate("memberId");
 };
 
-// Get a single loan
 export const getLoanById = async (id) => {
   const loan = await Loan.findById(id).populate("memberId");
 
@@ -84,7 +174,6 @@ export const getLoanById = async (id) => {
   return loan;
 };
 
-// Update a loan
 export const updateLoan = async (id, updateData) => {
   const loan = await Loan.findByIdAndUpdate(id, updateData, {
     new: true,
@@ -98,7 +187,6 @@ export const updateLoan = async (id, updateData) => {
   return loan;
 };
 
-// Delete a loan
 export const deleteLoan = async (id) => {
   const loan = await Loan.findByIdAndDelete(id);
 

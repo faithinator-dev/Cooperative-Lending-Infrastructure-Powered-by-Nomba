@@ -6,6 +6,7 @@ import {
   updateLoanController,
   deleteLoanController,
   repayLoan,
+  approveLoan,
 } from "../controllers/loan.controller.js";
 
 const router = express.Router();
@@ -16,6 +17,9 @@ router.get("/", getLoansController);
 router.get("/:id", getLoanByIdController);
 router.put("/:id", updateLoanController);
 router.delete("/:id", deleteLoanController);
+
+// Loan Disbursement
+router.post("/disburse/:loanId", approveLoan);
 
 // Loan Repayment
 router.post("/:loanId/repay", repayLoan);

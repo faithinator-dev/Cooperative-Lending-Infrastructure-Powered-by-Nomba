@@ -17,7 +17,6 @@ const ledgerSchema = new mongoose.Schema(
     virtualAccountId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "VirtualAccount",
-      required: true,
     },
 
     transactionType: {
@@ -78,7 +77,6 @@ const ledgerSchema = new mongoose.Schema(
 );
 
 // Indexes
-ledgerSchema.index({ transactionRef: 1 });
 ledgerSchema.index({ memberId: 1 });
 ledgerSchema.index({ loanId: 1 });
 ledgerSchema.index({ virtualAccountId: 1 });
