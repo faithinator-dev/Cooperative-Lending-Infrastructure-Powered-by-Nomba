@@ -1,12 +1,21 @@
 import Webhook from "../models/Webhook.js";
 import Ledger from "../models/Ledger.js";
 import VirtualAccount from "../models/VirtualAccount.js";
+import { processRepayment } from "../services/loanRepayment.service.js";
+import { updateTransferStatus } from "../services/transferWebhook.service.js";
 
 export const receiveWebhook = async (req, res) => {
   try {
     console.log("📩 Webhook Received");
 
-    const { transactionRef, eventType, accountNumber, amount } = req.body;
+    const {
+      transactionRef,
+      eventType,
+      accountNumber,
+      amount,
+      merchantTxRef,
+      transferStatus,
+    } = req.body;
 
     // Check for duplicate webhook
     const existingWebhook = await Webhook.findOne({ transactionRef });
@@ -15,6 +24,16 @@ export const receiveWebhook = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "Webhook already processed",
+      });
+    }
+
+    // Transfer webhook from Nomba
+    if (eventType === "transfer.success" || eventType === "transfer.refund") {
+      await updateTransferStatus(merchantTxRef, transferStatus);
+
+      return res.status(200).json({
+        success: true,
+        message: "Transfer webhook processed",
       });
     }
 
@@ -56,19 +75,42 @@ export const receiveWebhook = async (req, res) => {
 
     if (virtualAccount.accountType === "SAVE") {
       virtualAccount.balance += amount;
+
+      await virtualAccount.save();
+
+      await Ledger.create({
+        memberId: virtualAccount.memberId._id,
+        virtualAccountId: virtualAccount._id,
+        transactionType: "SAVINGS",
+        entryType: "CREDIT",
+        amount,
+        balanceAfter: virtualAccount.balance,
+        transactionRef,
+        narration: "Savings Deposit",
+        status: "SUCCESS",
+      });
+    }
+    /* if (virtualAccount.accountType === "SAVE") {
+      virtualAccount.balance += amount;
       await virtualAccount.save();
     }
 
-    if (virtualAccount.accountType === "LOAN") {
-      console.log("Loan repayment received");
+    */
 
-      // TODO : Call processRepayment() from loan.service.js
+    if (virtualAccount.accountType === "LOAN") {
+      const loan = await processRepayment(
+        virtualAccount.memberId._id,
+        virtualAccount._id,
+        amount,
+        transactionRef,
+      );
+
+      console.log("Loan repaid:", loan._id);
     }
 
     webhook.status = "PROCESSED";
     await webhook.save();
 
-    // TODO: Day 4
     // If accountType === "LOAN"
     // Call processRepayment() from loan.service.js
 

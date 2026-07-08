@@ -115,7 +115,8 @@ export const disburseLoan = async (loanId) => {
 
   if (transfer.data.status === "SUCCESS") {
     loan.status = "ACTIVE";
-  } else {
+  } 
+  else {
     loan.status = "PENDING";
   }
 

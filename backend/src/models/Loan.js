@@ -44,7 +44,7 @@ const loanSchema = new mongoose.Schema(
 
     disbursedAt: {
       type: Date,
-      default: Date.now,
+      default: null,
     },
 
     transferId: {
