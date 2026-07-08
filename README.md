@@ -1,344 +1,156 @@
-# Co-op Lend
+# Cooperative Lending Infrastructure Powered by Nomba
 
-Cooperative Lending Infrastructure Powered by Nomba
+Backend API for managing cooperative societies, member savings accounts, loan disbursement, repayment tracking, and ledger entries using Nomba integrations.
 
-Co-op Lend is a digital cooperative banking and lending platform built on top of Nomba APIs. The platform helps cooperative societies manage member savings, loan disbursement, loan repayments, and financial reporting through a transparent ledger-based system.
+## Current Scope
 
----
+This repository currently contains:
 
-## Problem
+- A Node.js/Express backend (`/backend`)
+- MongoDB models and services
+- Nomba integration services (auth, virtual accounts, transfers, transaction requery)
+- API and architecture docs under `/docs`
 
-Cooperative societies across Nigeria manage billions of naira in savings and loans, yet many still rely on manual bookkeeping, spreadsheets, paper records, and cash transactions.
+It does **not** currently contain a frontend application in this repo.
 
-These processes often lead to:
+## Core Capabilities
 
-- Fraud and fund diversion
-- Poor financial visibility
-- Loan repayment disputes
-- Inaccurate records
-- Difficult auditing processes
-- Lack of regulatory reporting
-
----
-
-## Solution
-
-Co-op Lend digitizes cooperative financial operations by providing:
-
-- Member management
-- Savings tracking
-- Loan management
-- Automated repayment processing
-- Digital loan disbursement
-- Real-time ledgers
-- Financial reporting
-- Audit trails
-
-Every financial transaction is recorded and traceable.
-
----
-
-## Key Features
-
-### Member Management
-
-- Register cooperative members
-- Manage member profiles
-- Track savings and loan history
-
-### Savings Management
-
-- Dedicated savings account per member
-- Real-time balance updates
-- Transaction history
-
-### Loan Management
-
-- Create and approve loans
-- Generate repayment schedules
-- Track outstanding balances
-- Detect arrears automatically
-
-### Loan Repayment Engine
-
-Handles:
-
-- Exact repayments
-- Underpayments
-- Overpayments
-- Arrears calculation
-- Penalty application
-
-### Digital Disbursement
-
-Loans are disbursed through Nomba transfer services.
-
-### Ledger-Based Accounting
-
-Every transaction creates a ledger entry.
-
-Benefits:
-
-- Full transparency
-- Fraud prevention
-- Auditability
-- Easy reconciliation
-
-### Reporting
-
-Generate:
-
-- Total savings reports
-- Outstanding loan reports
-- Defaulter reports
-- Collection rate reports
-- Exportable CSV reports
-
----
-
-## Architecture
-
-### Frontend (React)
-
-``` .
-User Interface
-Admin Dashboard
-Member Portal
-Reports
-Loan Management
-```
-
-### Backend (Node.js + Express)
-
-- Authentication
-- Loan Engine
-- Ledger Management
-- Nomba Integration
-- API Endpoints
-
-### Data (MongoDB)
-
-- Data persistence
-- Transaction records
-- Loan tracking
-- Member information
-- Audit logs
-
-### Nomba APIs
-
-- Authentication
-- Transfers
-- Transactions
-- Webhooks
-
----
+- Cooperative (co-op) CRUD management
+- Member onboarding with automatic creation of:
+  - Savings virtual account
+  - Loan repayment virtual account
+- Loan lifecycle:
+  - Create loan
+  - Disburse loan via Nomba transfer
+  - Repay loan and apply arrears penalty logic
+- Ledger recording for financial events
+- Webhook ingestion for inbound transactions with duplicate protection
+- Dashboard summary and chart endpoints
 
 ## Tech Stack
 
-### Frontend
+- Node.js (ES Modules)
+- Express
+- MongoDB + Mongoose
+- Axios (external API calls)
+- dotenv
+- nodemon (development)
 
-- React
-- React Router
-- Axios
-- Tailwind CSS
+## Repository Structure
 
-### Backend
-
-- Node.js
-- Express.js
-- Mongoose
-- JWT
-- Node-Cron
-
-### Database
-
-- MongoDB Atlas
-
-### Third Party Services
-
-- Nomba Sandbox APIs
-- Ngrok
-- Twilio SMS
-
----
-
-## Database Collections
-
-### Members
-
-```js
-{
-  name,
-  phone,
-  bvn,
-  coopId
-}
+```text
+.
+├── README.md
+├── docs
+│   ├── API_DOCUMENTATION.md
+│   ├── ARCHITECTURE.md
+│   ├── TEAM_RULES.md
+│   └── vitalInfo.txt
+└── backend
+    ├── package.json
+    ├── .env.example
+    └── src
+        ├── app.js
+        ├── server.js
+        ├── config
+        ├── controllers
+        ├── middlewares
+        ├── models
+        ├── routes
+        └── services
 ```
 
-### Accounts
+## Getting Started
 
-```js
-{
-  memberId,
-  accountType,
-  balance
-}
+### 1) Prerequisites
+
+- Node.js 18+
+- npm
+- MongoDB (local or hosted)
+- Nomba sandbox credentials
+
+### 2) Install dependencies
+
+```bash
+cd /home/runner/work/Cooperative-Lending-Infrastructure-Powered-by-Nomba/Cooperative-Lending-Infrastructure-Powered-by-Nomba/backend
+npm install
 ```
 
-### Loans
+### 3) Configure environment variables
 
-```js
-{
-  memberId,
-  principal,
-  interestRate,
-  tenorMonths,
-  monthlyDue,
-  balance,
-  status
-}
+Copy `/backend/.env.example` to `/backend/.env` and set real values.
+
+Required values:
+
+- `PORT`
+- `MONGO_URI`
+- `JWT_SECRET`
+- `NOMBA_BASE_URL`
+- `NOMBA_ACCOUNT_ID`
+- `NOMBA_SUB_ACCOUNT_ID`
+- `NOMBA_CLIENT_ID`
+- `NOMBA_CLIENT_SECRET`
+- `NOMBA_WEBHOOK_SECRET`
+- `TWILIO_SID`
+
+### 4) Run the API
+
+```bash
+npm run dev
 ```
 
-### Ledgers
+or
 
-```js
-{
-  memberId,
-  amount,
-  type,
-  transactionRef,
-  narration
-}
+```bash
+npm start
 ```
 
-### Webhooks
+## API Base Path
 
-```js
-{
-  transactionRef,
-  payload,
-  processed
-}
-```
+All routes are mounted under `/api`.
 
----
+### Route Groups
 
-## Webhook Processing
+- `/api/coops` - cooperative CRUD
+- `/api/members` - member CRUD and onboarding
+- `/api/loans` - loan CRUD, disbursement, repayment
+- `/api/transfers` - transfer utilities (banks, account lookup, send)
+- `/api/ledger` - ledger listing and detail
+- `/api/dashboard` - analytics endpoints
+- `/api/webhooks/nomba` - Nomba webhook receiver
 
-Incoming payment notifications are received through Nomba webhooks.
+For endpoint-level request/response examples, see:
 
-Process:
+- `/home/runner/work/Cooperative-Lending-Infrastructure-Powered-by-Nomba/Cooperative-Lending-Infrastructure-Powered-by-Nomba/docs/API_DOCUMENTATION.md`
 
-1. Verify webhook signature
-2. Validate transaction
-3. Check idempotency
-4. Create ledger entry
-5. Update account balance
-6. Run repayment logic if necessary
+## Data Models
 
-Duplicate webhook protection is implemented using unique transaction references.
+Primary MongoDB models:
 
----
+- `Coop`
+- `Member`
+- `VirtualAccount`
+- `Loan`
+- `Ledger`
+- `Webhook`
 
-## Security
+These are defined in:
 
-### Signature Verification
+- `/home/runner/work/Cooperative-Lending-Infrastructure-Powered-by-Nomba/Cooperative-Lending-Infrastructure-Powered-by-Nomba/backend/src/models`
 
-All webhooks are validated before processing.
+## Implementation Notes
 
-### Idempotency
+- Loan disbursement writes a ledger entry after transfer initiation.
+- Loan repayment logic supports underpayment penalty calculation.
+- Webhook processing stores incoming events and avoids duplicate processing by `transactionRef`.
+- `verifyWebhookSignature` middleware exists but is currently commented out in route wiring.
 
-Duplicate transactions are prevented through unique transaction references.
+## Additional Documentation
 
-### Audit Trail
-
-Every financial operation is logged and traceable.
-
----
-
-## Team Structure
-
-- **Backend Engineer 1**
-  - Nomba Integration
-  - Authentication
-  - Transfers
-  - Webhooks
-  - Reconciliation
-
-- **Backend Engineer 2**
-  - Database Design
-  - Ledger Engine
-  - Loan Engine
-  - Reporting
-
-- **Frontend Engineer 1**
-  - Admin Dashboard
-  - Member Management
-  - Reports
-
-- **Frontend Engineer 2**
-  - Member Portal
-  - Transactions
-  - Statements
+- Architecture details: `/home/runner/work/Cooperative-Lending-Infrastructure-Powered-by-Nomba/Cooperative-Lending-Infrastructure-Powered-by-Nomba/docs/ARCHITECTURE.md`
+- API details: `/home/runner/work/Cooperative-Lending-Infrastructure-Powered-by-Nomba/Cooperative-Lending-Infrastructure-Powered-by-Nomba/docs/API_DOCUMENTATION.md`
+- Contribution rules: `/home/runner/work/Cooperative-Lending-Infrastructure-Powered-by-Nomba/Cooperative-Lending-Infrastructure-Powered-by-Nomba/backend/CONTRIBUTING.md`
 
 ---
 
-## Demo Flow
-
-### Create Member
-
-Create a new cooperative member.
-
-### Deposit Savings
-
-Record a savings deposit and update balances.
-
-### Create Loan
-
-Generate a loan and repayment schedule.
-
-### Disburse Loan
-
-Transfer funds to the member.
-
-### Repay Loan
-
-Process repayments and update balances.
-
-### Generate Reports
-
-Export cooperative financial reports.
-
----
-
-## Future Improvements
-
-- Multi-cooperative support
-- Mobile application
-- Automated credit scoring
-- AI-powered risk analysis
-- Multi-bank integrations
-- Regulatory compliance dashboard
-
----
-
-## Why Co-op Lend?
-
-Co-op Lend transforms traditional cooperative societies into digitally managed financial institutions.
-
-The platform promotes:
-
-- Transparency
-- Accountability
-- Financial inclusion
-- Reduced fraud
-- Efficient loan management
-
----
-
-## Built For
-
-Nomba Hackathon
-
-Powered by Nomba APIs and modern financial infrastructure principles.
-
+Built for the Nomba hackathon project context.
