@@ -1,8 +1,15 @@
 import Loan from "../models/Loan.js";
 import Member from "../models/Member.js";
 import Ledger from "../models/Ledger.js";
-import { performTransfer } from "./nomba/transfer.service.js";
-
+import {
+  createLoan,
+  getLoans,
+  getLoanById,
+  updateLoan,
+  deleteLoan,
+  processRepayment,
+  disburseLoan,
+} from "../services/loan.service.js";
 //
 // ----------------------
 // Helper Functions
