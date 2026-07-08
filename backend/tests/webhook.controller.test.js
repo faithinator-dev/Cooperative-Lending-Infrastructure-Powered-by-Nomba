@@ -31,7 +31,7 @@ test("webhook duplicate handling only treats processed webhooks as processed", a
 
   assert.match(
     source,
-    /existingWebhook\.status\s*={0,2}\s*["']PROCESSED["']|status:\s*["']PROCESSED["']/,
+    /existingWebhook\.status\s*={2,3}\s*["']PROCESSED["']|status:\s*["']PROCESSED["']/,
     "retry logic should not ignore webhooks stuck in RECEIVED or PROCESSING",
   );
 });

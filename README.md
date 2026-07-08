@@ -350,7 +350,7 @@ Cooperative Lending Infrastructure Powered by Nomba.
 
 Co-op Lend is a Node.js and Express backend for cooperative savings, loan disbursement, loan repayment tracking, ledger records, and Nomba webhook reconciliation.
 
-The project is currently backend-focused. Some modules are implemented, but the automated tests show a few critical issues that must be fixed before the API can be treated as production-ready.
+The project is currently backend-focused. The automated test suite covers app import wiring, loan calculations, and webhook idempotency/security checks.
 
 ---
 
@@ -464,37 +464,34 @@ Latest recheck:
 
 ```text
 Tests: 8
-Passing: 3
-Failing: 5
+Passing: 8
+Failing: 0
 ```
 
 Passing:
 
+- `src/app.js` imports without route/controller wiring errors.
 - `calculateInterest` returns flat interest.
 - `calculatePenalty` returns 5 percent of the missed monthly amount.
 - `updateLoanStatus` handles paid, arrears, and active loans.
-
-Failing:
-
-- `src/app.js` cannot import because `loan.controller.js` declares/imports `createLoan` and also redeclares `createLoan`.
-- `createLoan` stores `balance: loanData.principal` instead of the total repayment amount.
-- The Nomba webhook route imports signature middleware but does not enable it.
-- Webhook processing creates more than one ledger entry for one `transactionRef`.
-- Webhook retry logic treats any existing webhook as processed, even if it is still `RECEIVED` or `PROCESSING`.
+- `createLoan` stores total repayment balance.
+- Nomba webhook route uses signature verification middleware.
+- Webhook processing avoids duplicate ledger entries for one `transactionRef`.
+- Webhook retry logic only treats `PROCESSED` webhooks as already processed.
 
 ---
 
-## What To Fix Next
+## What Was Fixed
 
-1. Fix `backend/src/controllers/loan.controller.js`.
+1. `backend/src/controllers/loan.controller.js` was rewritten as a thin controller layer.
 
-   It should export request handlers such as `createLoanController`, `getLoansController`, `getLoanByIdController`, `updateLoanController`, `deleteLoanController`, `repayLoan`, and `approveLoan`.
+   It now exports request handlers such as `createLoanController`, `getLoansController`, `getLoanByIdController`, `updateLoanController`, `deleteLoanController`, `repayLoan`, and `approveLoan`.
 
-   Business logic should stay in `backend/src/services/loan.service.js`.
+   Business logic stays in `backend/src/services/loan.service.js`.
 
-2. Fix loan balance calculation.
+2. Loan balance calculation now stores total repayment.
 
-   When creating a loan, calculate:
+   Loan creation calculates:
 
    ```js
    const interest = (principal * interestRate) / 100;
@@ -502,27 +499,27 @@ Failing:
    const monthlyDue = totalRepayment / tenorMonths;
    ```
 
-   Store `balance: totalRepayment`, not only `principal`.
+   The saved `balance` is `totalRepayment`, not only `principal`.
 
-3. Enable webhook signature verification.
+3. Webhook signature verification is enabled.
 
-   The Nomba webhook route should pass `verifyWebhookSignature` before `receiveWebhook`.
+   The Nomba webhook route passes `verifyWebhookSignature` before `receiveWebhook`.
 
-4. Fix webhook ledger idempotency.
+4. Webhook ledger idempotency was corrected.
 
-   A single webhook transaction should create one ledger entry for one `transactionRef`.
+   A single savings webhook transaction creates one ledger entry for one `transactionRef`.
 
-5. Fix webhook retry behavior.
+5. Webhook retry behavior was corrected.
 
-   Only return "already processed" when the saved webhook status is `PROCESSED`. Failed or stuck webhooks should be recoverable.
+   The system only returns "already processed" when the saved webhook status is `PROCESSED`.
 
-6. Run:
+6. Verification command:
 
    ```bash
    npm test
    ```
 
-   Continue fixing until all tests pass.
+   Current result: all tests pass.
 
 ---
 

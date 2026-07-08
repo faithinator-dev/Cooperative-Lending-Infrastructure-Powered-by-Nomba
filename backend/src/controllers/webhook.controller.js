@@ -20,7 +20,7 @@ export const receiveWebhook = async (req, res) => {
     // Check for duplicate webhook
     const existingWebhook = await Webhook.findOne({ transactionRef });
 
-    if (existingWebhook) {
+    if (existingWebhook && existingWebhook.status === "PROCESSED") {
       return res.status(200).json({
         success: true,
         message: "Webhook already processed",
@@ -49,29 +49,19 @@ export const receiveWebhook = async (req, res) => {
       });
     }
 
-    // Save webhook
-    const webhook = await Webhook.create({
-      transactionRef,
-      eventType,
-      accountNumber,
-      amount,
-      payload: req.body,
-    });
+    const webhook =
+      existingWebhook ||
+      (await Webhook.create({
+        transactionRef,
+        eventType,
+        accountNumber,
+        amount,
+        payload: req.body,
+      }));
 
     webhook.status = "PROCESSING";
+    webhook.payload = req.body;
     await webhook.save();
-
-    await Ledger.create({
-      memberId: virtualAccount.memberId._id,
-      virtualAccountId: virtualAccount._id,
-      transactionType: "SAVINGS",
-      entryType: "CREDIT",
-      amount,
-      balanceAfter: virtualAccount.balance + amount,
-      transactionRef,
-      narration: "Savings deposit via Nomba",
-      status: "SUCCESS",
-    });
 
     if (virtualAccount.accountType === "SAVE") {
       virtualAccount.balance += amount;
@@ -90,12 +80,6 @@ export const receiveWebhook = async (req, res) => {
         status: "SUCCESS",
       });
     }
-    /* if (virtualAccount.accountType === "SAVE") {
-      virtualAccount.balance += amount;
-      await virtualAccount.save();
-    }
-
-    */
 
     if (virtualAccount.accountType === "LOAN") {
       const loan = await processRepayment(
