@@ -9,10 +9,20 @@ const memberSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: true,
+trim: true,
+},
+
+bvn: {
+  type: String,
+  required: true,
+  unique: true,
+  trim: true,
+},
+
+memberId: {
+  type: String,
+  required: true,
       unique: true,
-    },
-    bvn: {
-      type: String,
     },
     coopId: {
       type: mongoose.Schema.Types.ObjectId,

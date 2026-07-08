@@ -6,8 +6,7 @@ const router = express.Router();
 
 router.post(
   "/nomba",
-/* // we would uncomment the verifyWebhookSignature middleware once we have the webhook secret from Nomba.
-    verifyWebhookSignature, */
+  verifyWebhookSignature,
   receiveWebhook
 );
 

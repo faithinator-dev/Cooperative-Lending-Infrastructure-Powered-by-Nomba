@@ -46,7 +46,6 @@ const coopSchema = new mongoose.Schema(
 );
 
 // Indexes
-coopSchema.index({ email: 1 });
 coopSchema.index({ status: 1 });
 
 export default mongoose.model("Coop", coopSchema);

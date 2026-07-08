@@ -1,20 +1,39 @@
 import Webhook from "../models/Webhook.js";
 import Ledger from "../models/Ledger.js";
 import VirtualAccount from "../models/VirtualAccount.js";
+import { processRepayment } from "../services/loanRepayment.service.js";
+import { updateTransferStatus } from "../services/transferWebhook.service.js";
 
 export const receiveWebhook = async (req, res) => {
   try {
     console.log("📩 Webhook Received");
 
-    const { transactionRef, eventType, accountNumber, amount } = req.body;
+    const {
+      transactionRef,
+      eventType,
+      accountNumber,
+      amount,
+      merchantTxRef,
+      transferStatus,
+    } = req.body;
 
     // Check for duplicate webhook
     const existingWebhook = await Webhook.findOne({ transactionRef });
 
-    if (existingWebhook) {
+    if (existingWebhook && existingWebhook.status === "PROCESSED") {
       return res.status(200).json({
         success: true,
         message: "Webhook already processed",
+      });
+    }
+
+    // Transfer webhook from Nomba
+    if (eventType === "transfer.success" || eventType === "transfer.refund") {
+      await updateTransferStatus(merchantTxRef, transferStatus);
+
+      return res.status(200).json({
+        success: true,
+        message: "Transfer webhook processed",
       });
     }
 
@@ -30,45 +49,52 @@ export const receiveWebhook = async (req, res) => {
       });
     }
 
-    // Save webhook
-    const webhook = await Webhook.create({
-      transactionRef,
-      eventType,
-      accountNumber,
-      amount,
-      payload: req.body,
-    });
+    const webhook =
+      existingWebhook ||
+      (await Webhook.create({
+        transactionRef,
+        eventType,
+        accountNumber,
+        amount,
+        payload: req.body,
+      }));
 
     webhook.status = "PROCESSING";
+    webhook.payload = req.body;
     await webhook.save();
-
-    await Ledger.create({
-      memberId: virtualAccount.memberId._id,
-      virtualAccountId: virtualAccount._id,
-      transactionType: "SAVINGS",
-      entryType: "CREDIT",
-      amount,
-      balanceAfter: virtualAccount.balance + amount,
-      transactionRef,
-      narration: "Savings deposit via Nomba",
-      status: "SUCCESS",
-    });
 
     if (virtualAccount.accountType === "SAVE") {
       virtualAccount.balance += amount;
+
       await virtualAccount.save();
+
+      await Ledger.create({
+        memberId: virtualAccount.memberId._id,
+        virtualAccountId: virtualAccount._id,
+        transactionType: "SAVINGS",
+        entryType: "CREDIT",
+        amount,
+        balanceAfter: virtualAccount.balance,
+        transactionRef,
+        narration: "Savings Deposit",
+        status: "SUCCESS",
+      });
     }
 
     if (virtualAccount.accountType === "LOAN") {
-      console.log("Loan repayment received");
+      const loan = await processRepayment(
+        virtualAccount.memberId._id,
+        virtualAccount._id,
+        amount,
+        transactionRef,
+      );
 
-      // TODO : Call processRepayment() from loan.service.js
+      console.log("Loan repaid:", loan._id);
     }
 
     webhook.status = "PROCESSED";
     await webhook.save();
 
-    // TODO: Day 4
     // If accountType === "LOAN"
     // Call processRepayment() from loan.service.js
 

@@ -8,6 +8,12 @@ const virtualAccountSchema = new mongoose.Schema(
       required: true,
     },
 
+    accountType: {
+      type: String,
+      enum: ["SAVE", "LOAN"],
+      required: true,
+    },
+
     accountNumber: {
       type: String,
       required: true,
@@ -19,20 +25,26 @@ const virtualAccountSchema = new mongoose.Schema(
       required: true,
     },
 
-    accountType: {
+    bankName: {
       type: String,
-      enum: ["SAVE", "LOAN"],
       required: true,
     },
 
-    accountRef: {
+    nombaAccountRef: {
       type: String,
       required: true,
+      unique: true,
     },
 
     balance: {
       type: Number,
       default: 0,
+    },
+
+    status: {
+      type: String,
+      enum: ["ACTIVE", "INACTIVE"],
+      default: "ACTIVE",
     },
   },
   {
