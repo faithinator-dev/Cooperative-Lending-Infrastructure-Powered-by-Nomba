@@ -46,15 +46,21 @@ export const disburseLoan = async (loanId) => {
   });
 
   // Save transfer details
+
   loan.transferId = transfer.data.id;
   loan.transferStatus = transfer.data.status;
   loan.merchantTxRef = merchantTxRef;
   loan.disbursedAt = new Date();
 
   // Update status based on Nomba response
-  if (transfer.data.status === "SUCCESS") {
+
+  if (
+    transfer.data.status === "SUCCESS" ||
+    transfer.data.status === "PENDING_BILLING"
+  ) {
     loan.status = "ACTIVE";
-  } else {
+  } 
+  else {
     loan.status = "PENDING";
   }
 
@@ -92,7 +98,8 @@ export const createLoan = async (loanData) => {
     tenorMonths: loanData.tenorMonths,
     monthlyDue,
     balance: loanData.principal,
-    status: "ACTIVE",
+    status: "PENDING",
+    transferStatus: "PENDING",
   });
 
   return loan;
