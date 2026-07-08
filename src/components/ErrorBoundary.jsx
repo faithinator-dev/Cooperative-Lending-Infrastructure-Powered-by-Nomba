@@ -10,7 +10,7 @@ export default function ErrorBoundary({ error, onRetry }) {
           onClick={onRetry}
           className="inline-flex rounded-3xl bg-rose-500/20 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/30"
         >
-          Retry
+          Retry here
         </button>
       )}
     </div>
