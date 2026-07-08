@@ -1,5 +1,7 @@
 # Co-op Lend
 
+<<<<<<< ours
+<<<<<<< ours
 Cooperative Lending Infrastructure Powered by Nomba
 
 Co-op Lend is a digital cooperative banking and lending platform built on top of Nomba APIs. The platform helps cooperative societies manage member savings, loan disbursement, loan repayments, and financial reporting through a transparent ledger-based system.
@@ -341,4 +343,197 @@ The platform promotes:
 Nomba Hackathon
 
 Powered by Nomba APIs and modern financial infrastructure principles.
+=======
+=======
+>>>>>>> theirs
+Cooperative Lending Infrastructure Powered by Nomba.
+
+Co-op Lend is a Node.js and Express backend for cooperative savings, loan disbursement, loan repayment tracking, ledger records, and Nomba webhook reconciliation.
+
+The project is currently backend-focused. Some modules are implemented, but the automated tests show a few critical issues that must be fixed before the API can be treated as production-ready.
+
+---
+
+## Core Features
+
+- Member and cooperative management
+- Virtual account support for savings and loan repayment flows
+- Loan creation, approval, disbursement, and repayment logic
+- Ledger records for financial activity
+- Nomba authentication, transfers, transactions, and webhook handling
+- Dashboard and reporting service modules
+
+---
+
+## Tech Stack
+
+- Node.js
+- Express
+- MongoDB with Mongoose
+- Nomba Sandbox APIs
+- Node built-in test runner
+
+---
+
+## Project Structure
+
+```text
+backend/
+  src/
+    app.js
+    server.js
+    config/
+    controllers/
+    middlewares/
+    models/
+    routes/
+    services/
+  tests/
+docs/
+  API_DOCUMENTATION.md
+  ARCHITECTURE.md
+  TEAM_RULES.md
+```
+
+---
+
+## Environment Setup
+
+Create `backend/.env` from `backend/.env.example` and provide the required values.
+
+Expected variables include:
+
+```env
+PORT=5000
+MONGODB_URI=
+NOMBA_CLIENT_ID=
+NOMBA_CLIENT_SECRET=
+NOMBA_ACCOUNT_ID=
+NOMBA_WEBHOOK_SECRET=
+```
+
+Do not commit real credentials.
+
+---
+
+## Install And Run
+
+From the backend directory:
+
+```bash
+npm install
+npm run start
+```
+
+For development:
+
+```bash
+npm run dev
+```
+
+---
+
+## Tests
+
+The test suite uses Node's built-in test runner.
+
+Run:
+
+```bash
+cd backend
+npm test
+```
+
+The tests live in:
+
+```text
+backend/tests/
+```
+
+Current test files:
+
+- `app.import.test.js` checks that the Express app can import without route/controller wiring errors.
+- `loan.service.test.js` checks loan interest, penalty, status, and repayment balance behavior.
+- `webhook.controller.test.js` checks webhook signature protection, ledger idempotency, and retry handling.
+
+---
+
+## Current Test Status
+
+Latest recheck:
+
+```text
+Tests: 8
+Passing: 3
+Failing: 5
+```
+
+Passing:
+
+- `calculateInterest` returns flat interest.
+- `calculatePenalty` returns 5 percent of the missed monthly amount.
+- `updateLoanStatus` handles paid, arrears, and active loans.
+
+Failing:
+
+- `src/app.js` cannot import because `loan.controller.js` declares/imports `createLoan` and also redeclares `createLoan`.
+- `createLoan` stores `balance: loanData.principal` instead of the total repayment amount.
+- The Nomba webhook route imports signature middleware but does not enable it.
+- Webhook processing creates more than one ledger entry for one `transactionRef`.
+- Webhook retry logic treats any existing webhook as processed, even if it is still `RECEIVED` or `PROCESSING`.
+
+---
+
+## What To Fix Next
+
+1. Fix `backend/src/controllers/loan.controller.js`.
+
+   It should export request handlers such as `createLoanController`, `getLoansController`, `getLoanByIdController`, `updateLoanController`, `deleteLoanController`, `repayLoan`, and `approveLoan`.
+
+   Business logic should stay in `backend/src/services/loan.service.js`.
+
+2. Fix loan balance calculation.
+
+   When creating a loan, calculate:
+
+   ```js
+   const interest = (principal * interestRate) / 100;
+   const totalRepayment = principal + interest;
+   const monthlyDue = totalRepayment / tenorMonths;
+   ```
+
+   Store `balance: totalRepayment`, not only `principal`.
+
+3. Enable webhook signature verification.
+
+   The Nomba webhook route should pass `verifyWebhookSignature` before `receiveWebhook`.
+
+4. Fix webhook ledger idempotency.
+
+   A single webhook transaction should create one ledger entry for one `transactionRef`.
+
+5. Fix webhook retry behavior.
+
+   Only return "already processed" when the saved webhook status is `PROCESSED`. Failed or stuck webhooks should be recoverable.
+
+6. Run:
+
+   ```bash
+   npm test
+   ```
+
+   Continue fixing until all tests pass.
+
+---
+
+## Important Notes
+
+- Financial updates should be atomic where possible. MongoDB transactions are recommended for webhook processing, ledger creation, account balance updates, and loan balance updates.
+- Every money movement should have a traceable ledger record.
+- Duplicate webhooks must not create duplicate ledger entries.
+- Webhook verification should be enabled before exposing the endpoint outside local development.
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 
