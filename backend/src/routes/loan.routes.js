@@ -1,9 +1,27 @@
 import express from "express";
-import {addLoan, approveLoan } from "../controllers/loan.controller.js";
+import {
+  createLoanController,
+  getLoansController,
+  getLoanByIdController,
+  updateLoanController,
+  deleteLoanController,
+  repayLoan,
+  approveLoan,
+} from "../controllers/loan.controller.js";
 
 const router = express.Router();
 
-router.post("/disburse/:loanId", approveLoan);
-router.post("/", addLoan);
+// Loan CRUD
+router.post("/", createLoanController);
+router.get("/", getLoansController);
+router.get("/:id", getLoanByIdController);
+router.put("/:id", updateLoanController);
+router.delete("/:id", deleteLoanController);
 
-export default router; 
+// Loan Disbursement
+router.post("/disburse/:loanId", approveLoan);
+
+// Loan Repayment
+router.post("/:loanId/repay", repayLoan);
+
+export default router;
