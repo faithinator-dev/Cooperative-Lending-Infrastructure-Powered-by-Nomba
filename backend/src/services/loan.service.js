@@ -146,9 +146,13 @@ export const disburseLoan = async (loanId) => {
 // ========================
 
 export const createLoan = async (loanData) => {
+  const interest = calculateInterest(
+    loanData.principal,
+    loanData.interestRate
+  );
+  const totalRepayment = loanData.principal + interest;
   const monthlyDue =
-    (loanData.principal * (1 + loanData.interestRate / 100)) /
-    loanData.tenorMonths;
+    totalRepayment / loanData.tenorMonths;
 
   return await Loan.create({
     memberId: loanData.memberId,
@@ -156,7 +160,7 @@ export const createLoan = async (loanData) => {
     interestRate: loanData.interestRate,
     tenorMonths: loanData.tenorMonths,
     monthlyDue,
-    balance: loanData.principal,
+    balance: totalRepayment,
     status: "PENDING",
   });
 };
