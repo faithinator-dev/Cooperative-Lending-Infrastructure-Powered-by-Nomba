@@ -1,46 +1,32 @@
-import React from 'react';
-import { Navigate, Route, Routes, Link } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
-import Members from './pages/Members';
-import Loans from './pages/Loans';
-import NotFound from './pages/NotFound';
+import React, { FormEvent, useEffect, useState } from 'react';
+import { Link, Navigate, Route, Routes, useNavigate, useSearchParams } from 'react-router-dom';
+import { api } from './api/client';
+import './styles.css';
 
-export default function App() {
-  return (
-    <div
-      style={{
-        fontFamily:
-          'system-ui, -apple-system, Segoe UI, Roboto, Arial',
-        padding: 16,
-        maxWidth: 960,
-        margin: '0 auto',
-      }}
-    >
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-          marginBottom: 24,
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: 20 }}>Co-op Lend</h1>
-        <nav style={{ display: 'flex', gap: 12 }}>
-          <Link to="/">Dashboard</Link>
-          <Link to="/members">Members</Link>
-          <Link to="/loans">Loans</Link>
-        </nav>
-      </header>
-
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/members" element={<Members />} />
-        <Route path="/loans" element={<Loans />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </div>
-  );
+type User = { name?: string; email?: string };
+const Auth = React.createContext<{user:User|null; refresh:()=>Promise<void>; logout:()=>Promise<void>}>({user:null,refresh:async()=>{},logout:async()=>{}});
+const useAuth=()=>React.useContext(Auth);
+function Provider({children}:{children:React.ReactNode}) {
+ const [user,setUser]=useState<User|null>(null);
+ const refresh=async()=>{try{const r=await api.get('/api/auth/me');setUser(r.data?.user??r.data??null)}catch{setUser(null)}};
+ useEffect(()=>{void refresh()},[]);
+ const logout=async()=>{try{await api.post('/api/auth/logout')}finally{setUser(null)}};
+ return <Auth.Provider value={{user,refresh,logout}}>{children}</Auth.Provider>;
 }
-
-
+function Brand(){return <Link className="brand" to="/"><span className="brand-icon">C</span>co-op<span>lend</span></Link>}
+function Header(){return <header className="header"><Brand/><nav><a href="#features">Features</a><a href="#how">How it works</a><a href="#about">About</a></nav><div><Link className="btn ghost" to="/login">Sign in</Link><Link className="btn primary" to="/register">Get started ↗</Link></div></header>}
+function Landing(){return <><Header/><main><section className="hero"><div><small className="eyebrow">COOPERATIVE FINANCE, MADE CLEARER</small><h1>Stronger cooperatives.<br/><em>Brighter futures.</em></h1><p>A simpler way to manage members, savings and loans — with transparent records your cooperative can trust.</p><div className="actions"><Link className="btn primary large" to="/register">Create your cooperative ↗</Link><Link className="btn outline large" to="/login">Sign in to your account</Link></div><small className="hero-note">Built for community-led finance</small></div><div className="visual"><div className="orbit"></div><article className="balance"><small>COOPERATIVE OVERVIEW</small><p>Total savings</p><strong>₦24,850,000</strong><span>↗ Community contributions</span><div className="bars">{[30,48,38,65,52,78,64,90,70,100,82,110].map((n,i)=><i key={i} style={{height:n}}/>)}</div></article><article className="float-card">✓ &nbsp; Clear activity. Better decisions.</article></div></section><section className="trust"><span>TOOLS FOR EVERY STAGE</span><b>MEMBERS</b><b>SAVINGS</b><b>LOANS</b><b>REPORTS</b><b>ACCOUNTABILITY</b></section><section id="features" className="section"><small className="eyebrow">ONE CONNECTED WORKSPACE</small><h2>Everything your cooperative<br/>needs to move forward.</h2><div className="features">{[['♧','Member management','Keep member profiles and cooperative activity organised.'],['₦','Savings visibility','Track contributions and balances with clear records.'],['↗','Loan management','Follow applications, approvals and repayments.'],['▤','Transparent records','Give your team consistent financial records and reports.']].map(([icon,title,desc])=><article key={title}><b>{icon}</b><h3>{title}</h3><p>{desc}</p></article>)}</div></section><section id="how" className="how"><div><small className="eyebrow">GETTING STARTED</small><h2>Good systems make<br/>good communities.</h2><p>Bring everyday cooperative finance into one organised workflow.</p></div><ol><li><b>01</b><span><strong>Set up your cooperative</strong><small>Create your workspace and invite your team.</small></span></li><li><b>02</b><span><strong>Bring in your members</strong><small>Organise member profiles and records.</small></span></li><li><b>03</b><span><strong>Manage with clarity</strong><small>Track savings, loans and activity as you grow.</small></span></li></ol></section><section id="about" className="cta"><div><small>BUILT AROUND YOUR COMMUNITY</small><h2>Make every record count.</h2><p>A clearer foundation for your cooperative's next chapter.</p></div><Link className="btn light large" to="/register">Get started today ↗</Link></section></main><footer><Brand/><span>Co-op Lend · Cooperative Lending Infrastructure</span><span>Powered by Nomba technology</span></footer></>}
+function AuthLayout({title,sub,children,foot}:{title:string;sub:string;children:React.ReactNode;foot?:React.ReactNode}){return <div className="auth"><aside><Brand/><div><small className="eyebrow">COMMUNITY FINANCE, CONNECTED</small><h2>Better records.<br/><em>Stronger communities.</em></h2><p>Bring your cooperative's people, savings and loans together in one clear workspace.</p></div><small>Co-op Lend · Cooperative Lending Infrastructure</small></aside><section><Link to="/" className="back">← Back to website</Link><div className="form-wrap"><Brand/><small className="eyebrow">YOUR COOPERATIVE WORKSPACE</small><h1>{title}</h1><p>{sub}</p>{children}{foot&&<div className="foot">{foot}</div>}</div><small className="legal">Secure access to your cooperative workspace</small></section></div>}
+function Input({label,type='text',value,onChange,placeholder}:{label:string;type?:string;value:string;onChange:(s:string)=>void;placeholder:string}){return <label className="field">{label}<input required type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}/></label>}
+function AuthNotice({message,error=false}:{message:string;error?:boolean}){return message?<div className={error?'notice error':'notice'}>{message}</div>:null}
+function Login(){const [email,E]=useState(''),[password,P]=useState(''),[msg,M]=useState(''),[busy,B]=useState(false);const {refresh}=useAuth();const nav=useNavigate();const submit=async(e:FormEvent)=>{e.preventDefault();B(true);M('');try{await api.post('/api/auth/login',{email,password});await refresh();nav('/app')}catch(x:any){M(x?.response?.data?.message||'Sign in is not available yet. Please try again later.')}finally{B(false)}};return <AuthLayout title="Welcome back" sub="Sign in to manage your cooperative." foot={<>New to Co-op Lend? <Link to="/register">Create an account</Link></>}><form onSubmit={submit}><Input label="Email address" type="email" value={email} onChange={E} placeholder="you@example.com"/><Input label="Password" type="password" value={password} onChange={P} placeholder="Enter your password"/><div className="form-row"><label><input type="checkbox"/> Remember me</label><Link to="/forgot-password">Forgot password?</Link></div><AuthNotice message={msg} error/><button className="btn primary full" disabled={busy}>{busy?'Signing in…':'Sign in'} ↗</button></form></AuthLayout>}
+function Register(){const [name,N]=useState(''),[email,E]=useState(''),[coop,C]=useState(''),[password,P]=useState(''),[msg,M]=useState(''),[busy,B]=useState(false);const nav=useNavigate();const submit=async(e:FormEvent)=>{e.preventDefault();B(true);try{await api.post('/api/auth/register',{name,email,cooperativeName:coop,password});nav('/login')}catch(x:any){M(x?.response?.data?.message||'Account creation is not available yet. Please try again later.')}finally{B(false)}};return <AuthLayout title="Create your account" sub="Start organising your cooperative in one place." foot={<>Already registered? <Link to="/login">Sign in</Link></>}><form onSubmit={submit}><Input label="Full name" value={name} onChange={N} placeholder="Your full name"/><Input label="Email address" type="email" value={email} onChange={E} placeholder="you@example.com"/><Input label="Cooperative name" value={coop} onChange={C} placeholder="Your cooperative society"/><Input label="Create password" type="password" value={password} onChange={P} placeholder="At least 8 characters"/><small className="hint">Use at least 8 characters and avoid reusing another account's password.</small><AuthNotice message={msg} error/><button className="btn primary full" disabled={busy}>{busy?'Creating account…':'Create account'} ↗</button></form></AuthLayout>}
+function Forgot(){const [email,E]=useState(''),[msg,M]=useState(''),[busy,B]=useState(false);const submit=async(e:FormEvent)=>{e.preventDefault();B(true);try{await api.post('/api/auth/forgot-password',{email});M('If an account exists for that email, reset instructions will be sent.')}catch(x:any){M(x?.response?.data?.message||'Password reset is not available yet. Please try again later.')}finally{B(false)}};return <AuthLayout title="Reset your password" sub="Enter the email address linked to your account."><form onSubmit={submit}><Input label="Email address" type="email" value={email} onChange={E} placeholder="you@example.com"/><AuthNotice message={msg}/><button className="btn primary full" disabled={busy}>{busy?'Sending…':'Send reset instructions'} ↗</button><Link className="center" to="/login">← Back to sign in</Link></form></AuthLayout>}
+function Reset(){const [params]=useSearchParams();const token=params.get('token')||'';const [password,P]=useState(''),[confirm,C]=useState(''),[msg,M]=useState(''),[error,X]=useState(false);const nav=useNavigate();const submit=async(e:FormEvent)=>{e.preventDefault();if(password.length<8||password!==confirm){X(true);M(password.length<8?'Use at least 8 characters.':'Passwords do not match.');return}try{await api.post('/api/auth/reset-password',{token,password});M('Password updated. You can now sign in.');setTimeout(()=>nav('/login'),1200)}catch(x:any){X(true);M(x?.response?.data?.message||'Reset link is invalid or expired. Request a new one.')}};return <AuthLayout title="Choose a new password" sub="Create a new password for your account."><form onSubmit={submit}><Input label="New password" type="password" value={password} onChange={P} placeholder="At least 8 characters"/><Input label="Confirm password" type="password" value={confirm} onChange={C} placeholder="Enter it again"/><AuthNotice message={msg} error={error}/><button className="btn primary full" disabled={!token}>Update password ↗</button>{!token&&<p className="hint">A valid reset link is required. <Link to="/forgot-password">Request a new one</Link>.</p>}</form></AuthLayout>}
+const pages=[['Dashboard','/app'],['Members','/app/members'],['Savings','/app/savings'],['Loans','/app/loans'],['Transactions','/app/transactions'],['Reports','/app/reports'],['Settings','/app/settings']];
+function Shell({children}:{children:React.ReactNode}){const {user,logout}=useAuth();const nav=useNavigate();return <div className="shell"><aside><Brand/><small>WORKSPACE</small><nav>{pages.map(([n,p])=><Link to={p} key={p}>{n}</Link>)}</nav><button onClick={async()=>{await logout();nav('/login')}}>Sign out · {user?.email||'Account'}</button></aside><main><header>Cooperative workspace <span>● Secure session</span></header><div className="workspace">{children}</div></main></div>}
+function Guard({children}:{children:React.ReactNode}){const {user}=useAuth();return user?<>{children}</>:<Navigate to="/login" replace/>}
+function Dashboard(){const {user}=useAuth();const [err,S]=useState('');useEffect(()=>{api.get('/api/dashboard').catch(e=>S(e?.response?.data?.message||'Dashboard data is not connected yet.'))},[]);return <><small className="eyebrow">OVERVIEW</small><h1>Good day{user?.name?' '+user.name.split(' ')[0]:''}</h1><p>Here's what's happening in your cooperative.</p>{err&&<AuthNotice message={err}/>}<div className="metrics">{['Total members','Total savings','Active loans','Outstanding balance'].map(t=><article key={t}><small>{t}</small><strong>—</strong><span>Live data will appear when connected</span></article>)}</div><article className="panel"><h3>Welcome to your cooperative workspace</h3><p>Connect your cooperative records to see recent activity, balances and reports.</p></article></>}
+function Module({title}:{title:string}){return <><small className="eyebrow">COOPERATIVE WORKSPACE</small><h1>{title}</h1><p>Manage your cooperative's {title.toLowerCase()}.</p><article className="panel"><h3>{title} workspace</h3><p>This section is ready for its backend API integration. Live records will appear when the endpoint is connected.</p></article></>}
+function ProtectedPage({title}:{title:string}){return <Guard><Shell><Module title={title}/></Shell></Guard>}
+export default function App(){return <Provider><Routes><Route path="/" element={<Landing/>}/><Route path="/login" element={<Login/>}/><Route path="/register" element={<Register/>}/><Route path="/forgot-password" element={<Forgot/>}/><Route path="/reset-password" element={<Reset/>}/><Route path="/app" element={<Guard><Shell><Dashboard/></Shell></Guard>}/>{pages.slice(1).map(([title,path])=><Route key={path} path={path} element={<ProtectedPage title={title}/>}/>)}<Route path="*" element={<Navigate to="/" replace/>}/></Routes></Provider>}
