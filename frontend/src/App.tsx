@@ -4,14 +4,15 @@ import { api } from './api/client';
 import './styles.css';
 
 type User = { name?: string; email?: string };
-const Auth = React.createContext<{user:User|null; refresh:()=>Promise<void>; logout:()=>Promise<void>}>({user:null,refresh:async()=>{},logout:async()=>{}});
+const Auth = React.createContext<{user:User|null; loading:boolean; refresh:()=>Promise<void>; logout:()=>Promise<void>}>({user:null,loading:true,refresh:async()=>{},logout:async()=>{}});
 const useAuth=()=>React.useContext(Auth);
 function Provider({children}:{children:React.ReactNode}) {
  const [user,setUser]=useState<User|null>(null);
- const refresh=async()=>{try{const r=await api.get('/api/auth/me');setUser(r.data?.user??r.data??null)}catch{setUser(null)}};
+ const [loading,setLoading]=useState(true);
+ const refresh=async()=>{try{const r=await api.get('/api/auth/me');setUser(r.data?.user??r.data??null)}catch{setUser(null)}finally{setLoading(false)}};
  useEffect(()=>{void refresh()},[]);
  const logout=async()=>{try{await api.post('/api/auth/logout')}finally{setUser(null)}};
- return <Auth.Provider value={{user,refresh,logout}}>{children}</Auth.Provider>;
+ return <Auth.Provider value={{user,loading,refresh,logout}}>{children}</Auth.Provider>;
 }
 function Brand(){return <Link className="brand" to="/"><span className="brand-icon">C</span>co-op<span>lend</span></Link>}
 function Header(){return <header className="header"><Brand/><nav><a href="#features">Features</a><a href="#how">How it works</a><a href="#about">About</a></nav><div><Link className="btn ghost" to="/login">Sign in</Link><Link className="btn primary" to="/register">Get started ↗</Link></div></header>}
@@ -25,7 +26,7 @@ function Forgot(){const [email,E]=useState(''),[msg,M]=useState(''),[busy,B]=use
 function Reset(){const [params]=useSearchParams();const token=params.get('token')||'';const [password,P]=useState(''),[confirm,C]=useState(''),[msg,M]=useState(''),[error,X]=useState(false);const nav=useNavigate();const submit=async(e:FormEvent)=>{e.preventDefault();if(password.length<8||password!==confirm){X(true);M(password.length<8?'Use at least 8 characters.':'Passwords do not match.');return}try{await api.post('/api/auth/reset-password',{token,password});M('Password updated. You can now sign in.');setTimeout(()=>nav('/login'),1200)}catch(x:any){X(true);M(x?.response?.data?.message||'Reset link is invalid or expired. Request a new one.')}};return <AuthLayout title="Choose a new password" sub="Create a new password for your account."><form onSubmit={submit}><Input label="New password" type="password" value={password} onChange={P} placeholder="At least 8 characters"/><Input label="Confirm password" type="password" value={confirm} onChange={C} placeholder="Enter it again"/><AuthNotice message={msg} error={error}/><button className="btn primary full" disabled={!token}>Update password ↗</button>{!token&&<p className="hint">A valid reset link is required. <Link to="/forgot-password">Request a new one</Link>.</p>}</form></AuthLayout>}
 const pages=[['Dashboard','/app'],['Members','/app/members'],['Savings','/app/savings'],['Loans','/app/loans'],['Transactions','/app/transactions'],['Reports','/app/reports'],['Settings','/app/settings']];
 function Shell({children}:{children:React.ReactNode}){const {user,logout}=useAuth();const nav=useNavigate();return <div className="shell"><aside><Brand/><small>WORKSPACE</small><nav>{pages.map(([n,p])=><Link to={p} key={p}>{n}</Link>)}</nav><button onClick={async()=>{await logout();nav('/login')}}>Sign out · {user?.email||'Account'}</button></aside><main><header>Cooperative workspace <span>● Secure session</span></header><div className="workspace">{children}</div></main></div>}
-function Guard({children}:{children:React.ReactNode}){const {user}=useAuth();return user?<>{children}</>:<Navigate to="/login" replace/>}
+function Guard({children}:{children:React.ReactNode}){const {user,loading}=useAuth();if(loading)return <div className="loading">Loading your workspace…</div>;return user?<>{children}</>:<Navigate to="/login" replace/>}
 function Dashboard(){const {user}=useAuth();const [err,S]=useState('');useEffect(()=>{api.get('/api/dashboard').catch(e=>S(e?.response?.data?.message||'Dashboard data is not connected yet.'))},[]);return <><small className="eyebrow">OVERVIEW</small><h1>Good day{user?.name?' '+user.name.split(' ')[0]:''}</h1><p>Here's what's happening in your cooperative.</p>{err&&<AuthNotice message={err}/>}<div className="metrics">{['Total members','Total savings','Active loans','Outstanding balance'].map(t=><article key={t}><small>{t}</small><strong>—</strong><span>Live data will appear when connected</span></article>)}</div><article className="panel"><h3>Welcome to your cooperative workspace</h3><p>Connect your cooperative records to see recent activity, balances and reports.</p></article></>}
 function Module({title}:{title:string}){return <><small className="eyebrow">COOPERATIVE WORKSPACE</small><h1>{title}</h1><p>Manage your cooperative's {title.toLowerCase()}.</p><article className="panel"><h3>{title} workspace</h3><p>This section is ready for its backend API integration. Live records will appear when the endpoint is connected.</p></article></>}
 function ProtectedPage({title}:{title:string}){return <Guard><Shell><Module title={title}/></Shell></Guard>}
