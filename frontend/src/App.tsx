@@ -1,46 +1,92 @@
-import React from 'react';
-import { Navigate, Route, Routes, Link } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
-import Members from './pages/Members';
-import Loans from './pages/Loans';
-import NotFound from './pages/NotFound';
+import { useEffect, useState } from "react";
+import { NavLink, Route, Routes } from "react-router-dom";
+import { Activity, ArrowDownLeft, ArrowUpRight, Bell, BookOpen, ChartNoAxesCombined, ChevronDown, CircleHelp, CreditCard, Download, FileText, HandCoins, LayoutDashboard, Landmark, LogOut, Menu, Plus, Search, Settings, ShieldCheck, Users, Wallet, X } from "lucide-react";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { api } from "./api/client";
+import "./styles.css";
+
+type AnyRecord = Record<string, any>;
+const demoMembers: AnyRecord[] = [
+  { name: "Adaobi Okafor", memberId: "CL-00241", phone: "080 •••• 2184", status: "Active", joined: "Today" },
+  { name: "Tunde Bakare", memberId: "CL-00240", phone: "080 •••• 7741", status: "Active", joined: "Yesterday" },
+  { name: "Chiamaka Eze", memberId: "CL-00239", phone: "081 •••• 9032", status: "Pending", joined: "May 18, 2026" },
+  { name: "Ibrahim Musa", memberId: "CL-00238", phone: "070 •••• 4410", status: "Active", joined: "May 17, 2026" },
+];
+const demoLoans: AnyRecord[] = [
+  { member: "Adaobi Okafor", ref: "LN-0084", principal: 450000, balance: 280000, status: "Active" },
+  { member: "Tunde Bakare", ref: "LN-0083", principal: 250000, balance: 125000, status: "Active" },
+  { member: "Chiamaka Eze", ref: "LN-0082", principal: 180000, balance: 180000, status: "Pending" },
+  { member: "Ibrahim Musa", ref: "LN-0081", principal: 600000, balance: 0, status: "Paid" },
+];
+const demoLedger: AnyRecord[] = [
+  { narration: "Monthly savings contribution", memberName: "Adaobi Okafor", transactionRef: "TXN-92841", createdAt: "Today, 10:42 AM", amount: 25000, type: "CREDIT" },
+  { narration: "Loan repayment", memberName: "Tunde Bakare", transactionRef: "TXN-92840", createdAt: "Today, 09:18 AM", amount: 15000, type: "CREDIT" },
+  { narration: "Loan disbursement", memberName: "Ibrahim Musa", transactionRef: "TXN-92839", createdAt: "Yesterday", amount: -120000, type: "DEBIT" },
+  { narration: "Monthly savings contribution", memberName: "Chiamaka Eze", transactionRef: "TXN-92838", createdAt: "Yesterday", amount: 10000, type: "CREDIT" },
+];
+const chartData = [
+  { month: "Jan", savings: 2.1, loans: 1.2 }, { month: "Feb", savings: 2.5, loans: 1.5 },
+  { month: "Mar", savings: 2.35, loans: 1.7 }, { month: "Apr", savings: 3.1, loans: 2.05 },
+  { month: "May", savings: 3.45, loans: 2.2 }, { month: "Jun", savings: 3.9, loans: 2.65 },
+];
+const navGroups = [
+  { label: "WORKSPACE", items: [{ to: "/", label: "Overview", icon: LayoutDashboard, end: true }, { to: "/members", label: "Members", icon: Users }, { to: "/savings", label: "Savings", icon: Wallet }, { to: "/loans", label: "Loans", icon: HandCoins }, { to: "/transactions", label: "Transactions", icon: Activity }] },
+  { label: "MANAGEMENT", items: [{ to: "/reports", label: "Reports", icon: ChartNoAxesCombined }, { to: "/cooperative", label: "Cooperative profile", icon: Landmark }] },
+];
+const money = (v: any) => typeof v === "number" ? new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(v) : v ?? "—";
+const arrayFrom = (v: any, keys: string[] = []) => Array.isArray(v) ? v : keys.map(k => v?.[k]).find(Array.isArray) ?? (Array.isArray(v?.data) ? v.data : []);
+function Status({ children }: { children: any }) { const s = String(children || "Unknown").toLowerCase(); return <span className={`status status-${s}`}><i />{children || "Unknown"}</span>; }
+
+function Sidebar({ open, close }: { open: boolean; close: () => void }) {
+  return <><button className={`mobile-scrim ${open ? "visible" : ""}`} aria-label="Close navigation" onClick={close}/><aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
+    <div className="brand"><div className="brand-mark"><Landmark size={21}/></div><div><b>co-op<span>lend</span></b><small>COOPERATIVE FINANCE</small></div><button className="icon-btn sidebar-close" onClick={close}><X size={18}/></button></div>
+    <div className="coop-switch"><div className="coop-avatar">AG</div><div><b>Afrodevs Cooperative</b><small>Administrator account</small></div><ChevronDown size={15}/></div>
+    <nav>{navGroups.map(group => <div className="nav-group" key={group.label}><p>{group.label}</p>{group.items.map(item => <NavLink key={item.to} to={item.to} end={item.end} onClick={close} className={({isActive}) => `nav-link ${isActive ? "active" : ""}`}><item.icon size={18}/><span>{item.label}</span>{item.label === "Members" && <small className="nav-count">240</small>}</NavLink>)}</div>)}</nav>
+    <div className="sidebar-bottom"><div className="help-card"><div className="help-icon"><CircleHelp size={17}/></div><b>Need a hand?</b><p>Visit the project repository for team documentation and guides.</p><a href="https://github.com/faithinator-dev/Cooperative-Lending-Infrastructure-Powered-by-Nomba" target="_blank" rel="noreferrer">Open repository <ArrowUpRight size={13}/></a></div><NavLink to="/settings" className="nav-link"><Settings size={18}/>Settings</NavLink><div className="profile-row"><div className="profile-avatar">CA</div><div><b>Co-op Admin</b><small>Administrator</small></div><button className="icon-btn" aria-label="Sign out"><LogOut size={16}/></button></div></div>
+  </aside></>;
+}
+function Header({ title, subtitle, onMenu }: { title: string; subtitle: string; onMenu: () => void }) {
+  return <header className="topbar"><div className="topbar-left"><button className="icon-btn menu-btn" onClick={onMenu}><Menu size={21}/></button><div><h1>{title}</h1><p>{subtitle}</p></div></div><div className="topbar-actions"><label className="search-box"><Search size={16}/><input placeholder="Search anything…"/><kbd>⌘ K</kbd></label><button className="icon-btn notification-btn" aria-label="Notifications"><Bell size={18}/><i/></button><div className="top-avatar">CA</div></div></header>;
+}
+function Shell({ title, subtitle, children, action }: { title: string; subtitle: string; children: any; action?: any }) {
+  const [open,setOpen]=useState(false);
+  return <div className="app-shell"><Sidebar open={open} close={()=>setOpen(false)}/><main className="main-area"><Header title={title} subtitle={subtitle} onMenu={()=>setOpen(true)}/><div className="page-content">{action && <div className="page-action">{action}</div>}{children}<footer>© 2026 Co-op Lend <span>Built for transparent cooperative finance</span></footer></div></main></div>;
+}
+function Heading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) { return <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{description}</p></div></div>; }
+function Stat({ label, value, icon: Icon, tone="green", change, detail }: any) { return <article className="stat-card"><div className="stat-top"><span>{label}</span><div className={`stat-icon ${tone}`}><Icon size={18}/></div></div><strong>{value}</strong><div className="stat-foot">{change && <span className="change"><ArrowUpRight size={13}/>{change}</span>}<span>{detail}</span></div></article>; }
+function TransactionsTable({ rows }: { rows: AnyRecord[] }) {
+  const list=rows.map((r,i)=>({title:r.title||r.narration||r.description||"Cooperative transaction",person:r.person||r.memberName||r.member?.name||"Member",ref:r.ref||r.transactionRef||r._id||`TXN-${92841-i}`,date:r.date||r.createdAt||"Recent",amount:r.amount??0,type:String(r.type||"CREDIT").toUpperCase()}));
+  return <div className="table-scroll"><table><thead><tr><th>TRANSACTION</th><th>REFERENCE</th><th>DATE</th><th>TYPE</th><th className="align-right">AMOUNT</th></tr></thead><tbody>{list.map((r,i)=><tr key={r.ref+i}><td><div className="transaction-name"><span className={`transaction-icon ${r.type==="DEBIT"?"debit":"credit"}`}>{r.type==="DEBIT"?<ArrowUpRight size={15}/>:<ArrowDownLeft size={15}/>}</span><div><b>{r.title}</b><small>{r.person}</small></div></div></td><td className="muted-cell">{r.ref}</td><td className="muted-cell">{String(r.date).slice(0,22)}</td><td><span className={`type-pill ${r.type.toLowerCase()}`}>{r.type}</span></td><td className={`amount-cell align-right ${r.type==="DEBIT"?"negative":"positive"}`}>{money(r.amount)}</td></tr>)}</tbody></table></div>;
+}
+function Dashboard({ data, members, loans, ledger, loading, refresh }: any) {
+  const stats=data?.data||data||{};
+  const activeLoans=loans.filter((x:any)=>String(x.status).toLowerCase()==="active").length;
+  return <Shell title="Overview" subtitle="Here's what's happening with your cooperative today." action={<button className="btn btn-primary" onClick={refresh}>↻ &nbsp;Refresh data</button>}>
+    <div className="welcome-banner"><div><span className="welcome-kicker">YOUR COOPERATIVE AT A GLANCE</span><h2>Good day, Admin <span>✦</span></h2><p>Keep your cooperative moving forward. Here's your latest activity.</p></div><div className="banner-art"><div className="art-circle circle-one"/><div className="art-circle circle-two"/><div className="art-card"><span>CO-OP LEND</span><b>₦</b><small>Growing together</small></div></div></div>
+    <div className="data-note"><i className="live-dot"/>{loading?"Connecting to backend…":"Backend connection checked"}<span>Demo figures are shown where live data is not yet available.</span></div>
+    <div className="stats-grid"><Stat label="Total members" value={stats.members??stats.totalMembers??(members.length||"240")} icon={Users} change="+12.8%" detail="vs. last month"/><Stat label="Total savings" value={money(stats.totalSavings??"₦18.4m")} icon={Wallet} tone="blue" change="+8.2%" detail="vs. last month"/><Stat label="Active loans" value={stats.activeLoans??(activeLoans||"54")} icon={HandCoins} tone="orange" change="+4.6%" detail="vs. last month"/><Stat label="Outstanding balance" value={money(stats.totalLoanBalance??"₦5.4m")} icon={CreditCard} tone="purple" detail="Across active loans"/></div>
+    <div className="content-grid"><section className="panel chart-panel"><div className="panel-heading"><div><h3>Financial overview</h3><p>Savings and loan activity over time</p></div><select defaultValue="6m"><option value="6m">Last 6 months</option><option value="year">This year</option></select></div><div className="chart-legend"><span><i className="legend-savings"/>Savings</span><span><i className="legend-loans"/>Loans</span></div><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{top:12,right:8,left:-18,bottom:0}}><defs><linearGradient id="savingsFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#15966c" stopOpacity={.2}/><stop offset="100%" stopColor="#15966c" stopOpacity={0}/></linearGradient><linearGradient id="loansFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e7a34b" stopOpacity={.18}/><stop offset="100%" stopColor="#e7a34b" stopOpacity={0}/></linearGradient></defs><CartesianGrid strokeDasharray="3 5" vertical={false} stroke="#edf0ee"/><XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fill:"#98a39e",fontSize:12}}/><YAxis axisLine={false} tickLine={false} tick={{fill:"#98a39e",fontSize:11}} tickFormatter={v=>`₦${v}m`}/><Tooltip formatter={(v:any)=>`₦${v}m`}/><Area type="monotone" dataKey="savings" stroke="#15966c" strokeWidth={2.5} fill="url(#savingsFill)"/><Area type="monotone" dataKey="loans" stroke="#e7a34b" strokeWidth={2.5} fill="url(#loansFill)"/></AreaChart></ResponsiveContainer></div></section>
+    <section className="panel quick-panel"><div className="panel-heading"><div><h3>Quick actions</h3><p>Common tasks, one click away</p></div></div><div className="quick-actions"><NavLink to="/members"><span className="quick-icon qi-green"><Users size={18}/></span><span><b>View members</b><small>Browse the member directory</small></span><ArrowUpRight size={16}/></NavLink><NavLink to="/loans"><span className="quick-icon qi-orange"><HandCoins size={18}/></span><span><b>Review loans</b><small>View loan records</small></span><ArrowUpRight size={16}/></NavLink><NavLink to="/transactions"><span className="quick-icon qi-blue"><Activity size={18}/></span><span><b>View transactions</b><small>Track money movement</small></span><ArrowUpRight size={16}/></NavLink><NavLink to="/reports"><span className="quick-icon qi-purple"><FileText size={18}/></span><span><b>Open reports</b><small>Review cooperative activity</small></span><ArrowUpRight size={16}/></NavLink></div></section></div>
+    <section className="panel table-panel"><div className="panel-heading"><div><h3>Recent transactions</h3><p>Your cooperative's latest financial activity</p></div><NavLink to="/transactions" className="text-link">View all <ArrowUpRight size={14}/></NavLink></div><TransactionsTable rows={ledger.length?ledger.slice(0,4):demoLedger}/></section>
+  </Shell>;
+}
+function Members({ members }: { members: AnyRecord[] }) {
+  const [query,setQuery]=useState("");
+  const rows=members.length?members:demoMembers;
+  const filtered=rows.filter(m=>String(m.name||m.fullName||"").toLowerCase().includes(query.toLowerCase())||String(m.memberId||m._id||"").toLowerCase().includes(query.toLowerCase()));
+  return <Shell title="Members" subtitle="Manage your cooperative members and their profiles." action={<button className="btn btn-primary" onClick={()=>window.alert("Member creation will be enabled after backend access controls and validation are ready.")}><Plus size={16}/> Add member</button>}><Heading eyebrow="MEMBER DIRECTORY" title="All members" description="A clear view of everyone in your cooperative."/><section className="panel table-panel"><div className="table-toolbar"><label className="search-box"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search members…"/></label><button className="btn btn-light"><Download size={15}/> Export</button></div><div className="table-scroll"><table><thead><tr><th>MEMBER</th><th>MEMBER ID</th><th>PHONE</th><th>JOINED</th><th>STATUS</th></tr></thead><tbody>{filtered.map((m,i)=><tr key={m._id||m.memberId||i}><td><div className="member-cell"><span className="member-avatar">{String(m.name||m.fullName||"M").split(" ").map(x=>x[0]).slice(0,2).join("")}</span><b>{m.name||m.fullName||"Member"}</b></div></td><td className="muted-cell">{m.memberId||m._id||"—"}</td><td className="muted-cell">{m.phone||"—"}</td><td className="muted-cell">{m.createdAt?new Date(m.createdAt).toLocaleDateString():m.joined||"—"}</td><td><Status>{m.status||"Active"}</Status></td></tr>)}</tbody></table></div><div className="table-footer">Showing {filtered.length} of {rows.length} members{!members.length?" · sample preview":""}</div></section></Shell>;
+}
+function Loans({ loans }: { loans: AnyRecord[] }) {
+  const rows=loans.length?loans:demoLoans;
+  return <Shell title="Loans" subtitle="Monitor loan records, disbursements and repayments." action={<button className="btn btn-primary" onClick={()=>window.alert("Loan creation will be enabled after the approval and permissions flow is verified.")}><Plus size={16}/> New loan</button>}><Heading eyebrow="CREDIT MANAGEMENT" title="Loan portfolio" description="Track the health of your cooperative's lending activity."/><div className="stats-grid compact-stats"><Stat label="Loan records" value={rows.length} icon={FileText}/><Stat label="Active loans" value={rows.filter(x=>String(x.status).toLowerCase()==="active").length} icon={HandCoins} tone="orange"/><Stat label="Awaiting review" value={rows.filter(x=>String(x.status).toLowerCase()==="pending").length} icon={Activity} tone="blue"/><Stat label="Completed" value={rows.filter(x=>String(x.status).toLowerCase()==="paid").length} icon={ShieldCheck} tone="purple"/></div><section className="panel table-panel"><div className="panel-heading"><div><h3>Loan records</h3><p>Applications and repayment accounts</p></div><button className="btn btn-light"><Download size={15}/> Export</button></div><div className="table-scroll"><table><thead><tr><th>MEMBER</th><th>LOAN REF</th><th>PRINCIPAL</th><th>OUTSTANDING</th><th>STATUS</th></tr></thead><tbody>{rows.map((l,i)=><tr key={l._id||l.ref||i}><td><b>{l.member||l.memberName||"Member"}</b></td><td className="muted-cell">{l.ref||l._id||"—"}</td><td>{money(l.principal??l.amount)}</td><td>{money(l.balance??l.outstandingBalance)}</td><td><Status>{l.status||"Pending"}</Status></td></tr>)}</tbody></table></div>{!loans.length&&<div className="table-footer">Sample preview · live loan data not yet returned</div>}</section></Shell>;
+}
+function Transactions({ ledger }: { ledger: AnyRecord[] }) { return <Shell title="Transactions" subtitle="Follow every movement recorded in your cooperative ledger."><Heading eyebrow="FINANCIAL ACTIVITY" title="Transaction history" description="Ledger entries currently available from the backend."/><section className="panel table-panel"><div className="panel-heading"><div><h3>All transactions</h3><p>Ledger activity and reconciliation records</p></div><button className="btn btn-light"><Download size={15}/> Export</button></div><TransactionsTable rows={ledger.length?ledger:demoLedger}/>{!ledger.length&&<div className="table-footer">Sample preview · no live ledger records returned</div>}</section></Shell>; }
+function InfoPage({ title, subtitle, eyebrow, heading, description, icon: Icon }: any) { return <Shell title={title} subtitle={subtitle}><Heading eyebrow={eyebrow} title={heading} description={description}/><div className="empty-state panel"><div className="empty-icon"><Icon size={24}/></div><h3>Backend integration pending</h3><p>This section is included in the frontend structure. It will become live when the corresponding secured backend endpoint is implemented and verified.</p></div></Shell>; }
+function NotFound() { return <InfoPage title="Page not found" subtitle="The page you requested does not exist." eyebrow="404" heading="We couldn't find that page" description="Use the navigation to return to your workspace." icon={CircleHelp}/>; }
 
 export default function App() {
-  return (
-    <div
-      style={{
-        fontFamily:
-          'system-ui, -apple-system, Segoe UI, Roboto, Arial',
-        padding: 16,
-        maxWidth: 960,
-        margin: '0 auto',
-      }}
-    >
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-          marginBottom: 24,
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: 20 }}>Co-op Lend</h1>
-        <nav style={{ display: 'flex', gap: 12 }}>
-          <Link to="/">Dashboard</Link>
-          <Link to="/members">Members</Link>
-          <Link to="/loans">Loans</Link>
-        </nav>
-      </header>
-
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/members" element={<Members />} />
-        <Route path="/loans" element={<Loans />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </div>
-  );
+  const [dashboard,setDashboard]=useState<any>(null),[members,setMembers]=useState<AnyRecord[]>([]),[loans,setLoans]=useState<AnyRecord[]>([]),[ledger,setLedger]=useState<AnyRecord[]>([]),[loading,setLoading]=useState(true);
+  const refresh=async()=>{setLoading(true);const results=await Promise.allSettled([api.get("/api/dashboard"),api.get("/api/members"),api.get("/api/loans"),api.get("/api/ledger")]);if(results[0].status==="fulfilled")setDashboard(results[0].value.data);if(results[1].status==="fulfilled")setMembers(arrayFrom(results[1].value.data,["members"]));if(results[2].status==="fulfilled")setLoans(arrayFrom(results[2].value.data,["loans"]));if(results[3].status==="fulfilled")setLedger(arrayFrom(results[3].value.data,["ledgers","data"]));setLoading(false);};
+  useEffect(()=>{void refresh();},[]);
+  return <Routes><Route path="/" element={<Dashboard data={dashboard} members={members} loans={loans} ledger={ledger} loading={loading} refresh={refresh}/>}/><Route path="/members" element={<Members members={members}/>}/><Route path="/loans" element={<Loans loans={loans}/>}/><Route path="/transactions" element={<Transactions ledger={ledger}/>}/><Route path="/savings" element={<InfoPage title="Savings" subtitle="Track member contributions and cooperative savings." eyebrow="SAVINGS MANAGEMENT" heading="Savings overview" description="A consolidated view of contributions and account activity." icon={Wallet}/>}/><Route path="/reports" element={<InfoPage title="Reports" subtitle="Understand your cooperative's performance." eyebrow="INSIGHTS & EXPORTS" heading="Reports centre" description="Reporting modules will become live as report endpoints are added." icon={BookOpen}/>}/><Route path="/cooperative" element={<InfoPage title="Cooperative profile" subtitle="Your organisation details." eyebrow="ORGANISATION" heading="Afrodevs Cooperative" description="Cooperative profile information and administration." icon={Landmark}/>}/><Route path="/settings" element={<InfoPage title="Settings" subtitle="Manage workspace preferences." eyebrow="WORKSPACE" heading="Settings" description="Account settings and role management require authentication." icon={Settings}/>}/><Route path="*" element={<NotFound/>}/></Routes>;
 }
-
-
